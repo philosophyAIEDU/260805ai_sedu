@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#FBF3EC" />
+<title>내 이야기 만들기</title>
+<link rel="stylesheet" href="css/style.css" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>" />
+</head>
+<body class="size-m">
+
+<!-- ===== 상단 막대 ===== -->
+<header class="topbar" role="banner">
+  <button id="btn-back" class="icon-btn" type="button" aria-label="뒤로 가기" hidden>
+    <span aria-hidden="true">←</span><span class="icon-btn__text">뒤로</span>
+  </button>
+
+  <div class="topbar__center">
+    <p id="step-label" class="step-label" aria-live="polite">내 이야기 만들기</p>
+    <div id="step-bar" class="step-bar" role="presentation"><span id="step-bar-fill"></span></div>
+  </div>
+
+  <div class="topbar__right">
+    <button id="btn-help" class="icon-btn" type="button" aria-label="도움말 보기">
+      <span aria-hidden="true">?</span><span class="icon-btn__text">도움말</span>
+    </button>
+    <button id="btn-settings" class="icon-btn icon-btn--quiet" type="button"
+            aria-label="선생님용 설정 열기 (길게 누르세요)" title="선생님용 설정 — 길게 누르세요">
+      <span aria-hidden="true">⚙</span>
+    </button>
+  </div>
+</header>
+
+<!-- ===== 화면 본문 ===== -->
+<main id="screen" class="screen" tabindex="-1"></main>
+
+<!-- ===== 안내 문구(스크린리더 전용 알림) ===== -->
+<p id="live-region" class="sr-only" aria-live="polite"></p>
+
+<!-- ===== 처음 안내 ===== -->
+<div id="onboarding" class="overlay" hidden>
+  <div class="overlay__panel" role="dialog" aria-modal="true" aria-labelledby="ob-title">
+    <div id="ob-slides" class="ob-slides"></div>
+    <div class="ob-dots" id="ob-dots" role="presentation"></div>
+    <div class="overlay__actions">
+      <button id="ob-skip" class="btn btn--ghost" type="button">건너뛰기</button>
+      <button id="ob-next" class="btn btn--primary" type="button">다음</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 도움말 ===== -->
+<div id="help" class="overlay" hidden>
+  <div class="overlay__panel" role="dialog" aria-modal="true" aria-labelledby="help-title">
+    <h2 id="help-title" class="overlay__title">🙋 지금 무엇을 하면 되나요?</h2>
+    <div id="help-body" class="overlay__body"></div>
+    <div class="overlay__actions">
+      <button id="help-replay" class="btn btn--ghost" type="button">처음 안내 다시 보기</button>
+      <button id="help-close" class="btn btn--primary" type="button">알았어요</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 선생님용 설정 ===== -->
+<div id="settings" class="overlay" hidden>
+  <div class="overlay__panel overlay__panel--wide" role="dialog" aria-modal="true" aria-labelledby="set-title">
+    <h2 id="set-title" class="overlay__title">⚙ 선생님용 설정</h2>
+    <div class="overlay__body" id="settings-body"></div>
+    <div class="overlay__actions">
+      <button id="set-close" class="btn btn--primary" type="button">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 보관함 ===== -->
+<div id="gallery" class="overlay" hidden>
+  <div class="overlay__panel overlay__panel--wide" role="dialog" aria-modal="true" aria-labelledby="gal-title">
+    <h2 id="gal-title" class="overlay__title">🗂 작품 보관함</h2>
+    <div class="overlay__body" id="gallery-body"></div>
+    <div class="overlay__actions">
+      <button id="gal-close" class="btn btn--primary" type="button">닫기</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/store.js"></script>
+<script src="js/db.js"></script>
+<script src="js/api.js"></script>
+<script src="js/speech.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/scanning.js"></script>
+<script src="js/panels.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
