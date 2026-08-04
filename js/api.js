@@ -25,32 +25,77 @@ const API = (() => {
     constructor(message, kind) { super(message); this.kind = kind || 'api'; }
   }
 
-  async function callModel(model, method, body, timeoutMs) {
-    if (!hasKey()) throw new ApiError('API 키가 아직 없어요. 선생님용 설정에서 넣어 주세요.', 'nokey');
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), timeoutMs || 60000);
-    let res;
-    try {
-      res = await fetch(`${CFG.API_BASE}/models/${model}:${method}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key() },
-        body: JSON.stringify(body),
-        signal: ctrl.signal
-      });
-    } catch (e) {
-      clearTimeout(timer);
-      throw new ApiError('인터넷 연결을 확인해 주세요.', 'network');
+  /* 마지막 오류의 자세한 내용 — 결과 화면의 "선생님께" 칸에서 보여 줍니다.
+     학생에게는 쉬운 말만 보이고, 원인 파악에 필요한 원문은 여기에 담아 둡니다. */
+  let lastError = null;
+  function getLastError() { return lastError; }
+
+  /* 기다리는 동안 화면에 안내 문구를 바꿔 주는 콜백 (app.js가 등록) */
+  let statusHandler = null;
+  function setStatusHandler(fn) { statusHandler = fn || null; }
+  function say(msg) { if (statusHandler) { try { statusHandler(msg); } catch (_) {} } }
+
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  /* 429 응답에 담겨 오는 "이만큼 뒤에 다시 시도하세요" 값 읽기 */
+  function retryDelaySec(errJson) {
+    const details = (errJson && errJson.error && errJson.error.details) || [];
+    for (const d of details) {
+      const t = d['@type'] || '';
+      if (t.indexOf('RetryInfo') !== -1 && d.retryDelay) {
+        const m = String(d.retryDelay).match(/^([\d.]+)s$/);
+        if (m) return Math.ceil(parseFloat(m[1]));
+      }
     }
-    clearTimeout(timer);
-    if (!res.ok) {
-      let detail = '';
-      try { const j = await res.json(); detail = (j.error && j.error.message) || ''; } catch (_) {}
+    return null;
+  }
+
+  /* 사용량 초과(429)·일시적 오류(500·503)는 잠깐 기다렸다 스스로 다시 시도합니다. */
+  const RETRY_WAITS = [8, 20];   // 초
+
+  async function callModel(model, method, body, timeoutMs, opts) {
+    if (!hasKey()) throw new ApiError('API 키가 아직 없어요. 선생님용 설정에서 넣어 주세요.', 'nokey');
+    const maxRetries = (opts && opts.retries != null) ? opts.retries : RETRY_WAITS.length;
+
+    for (let attempt = 0; ; attempt++) {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), timeoutMs || 60000);
+      let res;
+      try {
+        res = await fetch(`${CFG.API_BASE}/models/${model}:${method}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key() },
+          body: JSON.stringify(body),
+          signal: ctrl.signal
+        });
+      } catch (e) {
+        clearTimeout(timer);
+        lastError = { status: 0, message: String((e && e.message) || e), model, method };
+        throw new ApiError('인터넷 연결을 확인해 주세요.', 'network');
+      }
+      clearTimeout(timer);
+
+      if (res.ok) return res.json();
+
+      let json = null, detail = '';
+      try { json = await res.json(); detail = (json.error && json.error.message) || ''; } catch (_) {}
+      lastError = { status: res.status, message: detail || `HTTP ${res.status}`, model, method };
+
+      const retriable = res.status === 429 || res.status === 500 || res.status === 503;
+      if (retriable && attempt < maxRetries) {
+        const wait = retryDelaySec(json) || RETRY_WAITS[Math.min(attempt, RETRY_WAITS.length - 1)];
+        say(`조금만 더 기다려 주세요… (${wait}초 뒤에 다시 해 볼게요)`);
+        await sleep(wait * 1000);
+        say(null);
+        continue;
+      }
+
       if (res.status === 400 && /API key/i.test(detail)) throw new ApiError('API 키가 올바르지 않아요.', 'nokey');
       if (res.status === 401 || res.status === 403) throw new ApiError('API 키를 확인해 주세요.', 'nokey');
-      if (res.status === 429) throw new ApiError('잠시 뒤에 다시 해 주세요. (사용량이 많아요)', 'rate');
+      if (res.status === 429) throw new ApiError('지금은 쉬어야 해요. 조금 뒤에 다시 해 볼까요?', 'rate');
+      if (res.status === 404) throw new ApiError('이 기능은 지금 쓸 수 없어요.', 'model');
       throw new ApiError(detail || `요청이 잘 되지 않았어요. (${res.status})`, 'api');
     }
-    return res.json();
   }
 
   /* ---------- 응답 도우미 ---------- */
@@ -100,7 +145,7 @@ const API = (() => {
         maxOutputTokens: o.maxOutputTokens || 700,
         responseMimeType: o.json ? 'application/json' : 'text/plain'
       }
-    }, 30000);
+    }, 30000, { retries: o.retries != null ? o.retries : 0 });
     return textOf(json);
   }
 
@@ -194,7 +239,7 @@ JSON 배열만 출력: ["제목1","제목2","제목3"]`;
         { inline_data: { mime_type: att.mimeType, data: att.base64 } }
       ] }],
       generationConfig: { temperature: 0.9, maxOutputTokens: 200 }
-    }, 40000);
+    }, 40000, { retries: 0 });
     return textOf(json);
   }
 
@@ -367,7 +412,7 @@ JSON 배열만 출력: [{"text":"...","image":"..."}, ...]`;
   }
 
   return {
-    hasKey, ApiError, askText,
+    hasKey, ApiError, askText, getLastError, setStatusHandler,
     makeChoices, makeStory, suggestTitles, describeDrawing,
     refinePrompt, localPrompt, describePicks,
     generateImage, editImage, generateMusic, generateVideo,

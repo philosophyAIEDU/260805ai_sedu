@@ -481,9 +481,16 @@ const App = (() => {
       msgEl.textContent = msgs[i];
       dots.querySelectorAll('i').forEach((d, k) => d.classList.toggle('on', k <= i));
     }, ctx.mode === 'video' ? 12000 : 6000);
+
+    // 사용량이 많아 잠깐 기다렸다 다시 시도할 때 그 사정을 화면에 알려 줍니다.
+    API.setStatusHandler(msg => { msgEl.textContent = msg || msgs[i]; });
   }
 
-  function stopMaking() { clearInterval(makingTimer); makingTimer = null; }
+  function stopMaking() {
+    clearInterval(makingTimer);
+    makingTimer = null;
+    API.setStatusHandler(null);
+  }
 
   async function startMaking() {
     screenMaking();
@@ -568,7 +575,38 @@ const App = (() => {
         UI.btn('처음으로', { onClick: goHome }),
         needKey ? UI.btn('🔑 API 키 넣기', { kind: 'sky', onClick: () => Panels.openApiKeySetup() }) : null,
         UI.btn('다시 만들기', { kind: 'primary', onClick: startMaking })
-      ])
+      ]),
+      teacherErrorDetail(e)
+    ]);
+  }
+
+  /* 학생에게는 쉬운 말만 보이고, 원인 파악에 필요한 내용은 접어 둡니다. */
+  function teacherErrorDetail(e) {
+    const info = API.getLastError();
+    if (!info && !e) return null;
+    const status = info ? info.status : 0;
+
+    const tips = [];
+    if (status === 429) {
+      tips.push('요청 한도를 넘었을 때 나오는 오류입니다(429). 아래를 확인해 주세요.');
+      tips.push('· 무료 등급은 분당·하루 요청 수가 적습니다. 1~2분 뒤에 다시 시도해 보세요.');
+      tips.push('· 그림·노래·영상 모델은 결제가 연결된 프로젝트에서만 넉넉히 쓸 수 있습니다.');
+      tips.push('· 한 반이 같은 키를 함께 쓰면 한도에 빨리 닿습니다. 순서대로 만들게 하거나 키를 나눠 주세요.');
+      tips.push('· Google AI Studio → API key → 사용량/한도에서 남은 양을 확인할 수 있습니다.');
+    } else if (status === 404) {
+      tips.push('모델을 찾지 못했습니다(404). 이 계정에서 아직 쓸 수 없는 모델일 수 있습니다.');
+      tips.push('· js/config.js 의 CFG.MODELS 에서 모델 이름을 확인해 주세요.');
+    } else if (status === 401 || status === 403) {
+      tips.push('키 권한 문제입니다. 설정에서 API 키를 다시 넣어 주세요.');
+    } else if (status === 0) {
+      tips.push('네트워크 연결이 끊겼거나 학교 방화벽에 막혔을 수 있습니다.');
+    }
+
+    return el('details', { class: 'teacher-doc', style: 'max-width:680px; margin:24px auto 0;' }, [
+      el('summary', { text: '🧑‍🏫 선생님께 — 자세한 내용 보기' }),
+      info ? el('p', { style: 'font-family:monospace; font-size:.78em; word-break:break-all; white-space:pre-wrap;',
+                       text: `${info.model} · ${info.method} · HTTP ${info.status}\n${info.message}` }) : null,
+      tips.length ? el('ul', {}, tips.map(t => el('li', { text: t }))) : null
     ]);
   }
 
