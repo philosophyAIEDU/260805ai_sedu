@@ -41,7 +41,7 @@ const App = (() => {
       const qs = mode === 'song' ? CFG.QUESTIONS.song : CFG.QUESTIONS.make;
       qs.forEach(q => steps.push({ kind: 'question', spec: q, label: shortLabel(q) }));
       if (mode === 'book') steps.push({ kind: 'pages', label: '몇 장으로 만들까요' });
-      if (mode === 'song') steps.push({ kind: 'name', label: '주인공 이름 짓기' });
+      if (mode === 'song' || mode === 'story') steps.push({ kind: 'name', label: '주인공 이름 짓기' });
       else steps.push({ kind: 'attach', label: '내 그림 넣기' });
     }
     steps.push({ kind: 'confirm', label: '확인하기' });
@@ -87,9 +87,48 @@ const App = (() => {
       });
     });
 
+    /* 다른 앱으로 가는 카드 — 앱을 벗어난다는 것을 글과 화살표로 알려 줍니다. */
+    const linkCards = (CFG.LINKS || []).map(link => {
+      const a = el('a', {
+        class: 'card card--link',
+        href: link.url, target: '_blank', rel: 'noopener noreferrer',
+        'aria-label': `${link.label}. ${link.desc}. 새 창에서 열려요.`
+      }, [
+        el('span', { class: 'card__emoji', 'aria-hidden': 'true', text: link.emoji }),
+        el('span', { class: 'card__label', text: link.label }),
+        el('span', { class: 'card__desc', text: link.desc }),
+        el('span', { class: 'card__note', text: '새 창에서 열려요 ↗' })
+      ]);
+      a.addEventListener('click', () => Store.beep('tap'));
+      return a;
+    });
+    const linkRow = linkCards.length ? el('div', { class: 'link-row' }, [
+      el('p', { class: 'link-row__title', text: '다른 앱으로 가기' }),
+      UI.grid(linkCards)
+    ]) : null;
+
+    if (!cards.length) {
+      // 선생님이 기능을 모두 꺼 두면 학생 화면이 텅 비지 않도록 안내합니다.
+      UI.render([
+        UI.title('잠깐만요', ' '),
+        el('div', { class: 'empty' }, [
+          el('div', { class: 'empty__emoji', 'aria-hidden': 'true', text: '🌱' }),
+          el('p', { text: '지금은 만들 수 있는 것이 없어요.' }),
+          el('p', { text: '선생님, 설정에서 사용할 기능을 켜 주세요.' })
+        ]),
+        el('div', { class: 'actions' }, [
+          UI.btn('⚙ 설정 열기', { kind: 'primary', onClick: () => Panels.openSettings() }),
+          UI.btn('🗂 작품 보관함', { kind: 'sky', onClick: () => Panels.openGallery() })
+        ]),
+        linkRow
+      ]);
+      return;
+    }
+
     UI.render([
       UI.title('무엇을 만들까요?', '누르면 만들기가 시작돼요. 언제든 뒤로 갈 수 있어요.'),
       UI.grid(cards),
+      linkRow,
       el('div', { class: 'actions' }, [
         UI.btn('🗂 작품 보관함', { kind: 'sky', onClick: () => Panels.openGallery() }),
         UI.btn('❓ 사용법 다시 보기', { onClick: () => Panels.openOnboarding() })
@@ -447,7 +486,8 @@ const App = (() => {
     edit:  ['그림을 보고 있어요…', '색을 칠하고 있어요…', '조금만 더 기다려 주세요…', '거의 다 됐어요…'],
     song:  ['악기를 준비하고 있어요…', '멜로디를 만들고 있어요…', '노래를 다듬고 있어요…', '거의 다 됐어요…'],
     video: ['장면을 생각하고 있어요…', '영상을 찍고 있어요…', '영상은 시간이 조금 걸려요…', '조금만 더 기다려 주세요…'],
-    book:  ['이야기를 짓고 있어요…', '첫 번째 그림을 그려요…', '다음 그림을 그려요…', '책을 묶고 있어요…']
+    book:  ['이야기를 짓고 있어요…', '첫 번째 그림을 그려요…', '다음 그림을 그려요…', '책을 묶고 있어요…'],
+    story: ['고른 것을 모으고 있어요…', '이야기를 짓고 있어요…', '문장을 다듬고 있어요…', '거의 다 됐어요…']
   };
 
   let makingTimer = null;
@@ -515,6 +555,10 @@ const App = (() => {
         const blob = await API.generateVideo(prompt, ctx.attachment);
         Store.useVideoOnce();                       // 성공했을 때만 횟수를 씁니다
         ctx.result = { kind: 'video', blobs: [blob] };
+      }
+      else if (ctx.mode === 'story') {
+        // 글자 모델만 사용합니다(무료 키로도 잘 됩니다). 이야기는 아래에서 만들어요.
+        ctx.result = { kind: 'story', blobs: [] };
       }
       else if (ctx.mode === 'book') {
         const scenes = await API.makeBookScenes(ctx, ctx.pageCount);
@@ -617,11 +661,21 @@ const App = (() => {
     UI.setBack(() => go(flow.length - 1));
 
     const r = ctx.result;
+    const isStory = r.kind === 'story';
     const urls = r.blobs.map(b => URL.createObjectURL(b));
 
+    /* 이야기 만들기는 글자가 곧 결과물이라 파일을 그때그때 만듭니다. */
+    function outputBlobs() {
+      if (!isStory) return r.blobs;
+      const text = (ctx.title ? ctx.title + '\n\n' : '') + (ctx.story || '') + '\n\n— ' + UI.todayText();
+      return [new Blob([text], { type: 'text/plain;charset=utf-8' })];
+    }
+
     /* --- 결과물 --- */
-    let stageInner;
-    if (r.kind === 'image') {
+    let stageInner = null;
+    if (isStory) {
+      stageInner = null;   // 이야기는 아래 이야기 상자가 곧 결과물입니다.
+    } else if (r.kind === 'image') {
       stageInner = el('img', { src: urls[0], alt: ctx.title || '내가 만든 그림' });
     } else if (r.kind === 'video') {
       stageInner = el('video', { src: urls[0], controls: true, playsinline: true, loop: true,
@@ -685,7 +739,8 @@ const App = (() => {
       rateText.textContent = `${Number(rate.value).toFixed(1)}배`;
     });
 
-    const storyBox = el('div', { class: 'story-box' }, [
+    const storyBox = el('div', { class: 'story-box' + (isStory ? ' story-box--main' : '') }, [
+      isStory ? el('div', { style: 'font-size:3em; text-align:center;', 'aria-hidden': 'true', text: '📝' }) : null,
       el('p', { text: ctx.story || '' }),
       Speech.supported ? el('div', { class: 'actions', style: 'margin-top:14px;' }, [
         UI.btn('🔊 이야기 읽어주기', { kind: 'mint', onClick: () => Speech.speak(ctx.story) }),
@@ -700,10 +755,13 @@ const App = (() => {
     /* --- 저장 --- */
     const saveMsg = el('p', { class: 'field__hint', style: 'text-align:center;' });
 
-    function fileName(i) {
+    function fileName(i, blobs) {
       const base = (ctx.title || '내작품').replace(/[\\/:*?"<>|]/g, '') || '내작품';
-      const ext = r.kind === 'video' ? 'mp4' : r.kind === 'audio' ? (r.blobs[0].type.includes('mpeg') ? 'mp3' : 'wav') : 'png';
-      return r.blobs.length > 1 ? `${base}-${i + 1}.${ext}` : `${base}.${ext}`;
+      const ext = isStory ? 'txt'
+                : r.kind === 'video' ? 'mp4'
+                : r.kind === 'audio' ? (r.blobs[0].type.includes('mpeg') ? 'mp3' : 'wav')
+                : 'png';
+      return blobs.length > 1 ? `${base}-${i + 1}.${ext}` : `${base}.${ext}`;
     }
 
     const keepBtn = UI.btn('🗂 보관함에 담기', {
@@ -716,7 +774,7 @@ const App = (() => {
             title: ctx.title || '이름 없는 작품',
             story: ctx.story || '',
             texts: r.texts || [],
-            blobs: r.blobs,
+            blobs: outputBlobs(),
             createdAt: Date.now(),
             dateText: UI.todayText()
           });
@@ -731,7 +789,7 @@ const App = (() => {
 
     UI.render([
       UI.title('다 만들었어요! 🎉', '이름을 붙이고 저장해 보세요.'),
-      el('div', { class: 'result-stage' }, [stageInner]),
+      stageInner ? el('div', { class: 'result-stage' }, [stageInner]) : null,
 
       el('div', { class: 'field' }, [
         el('label', { class: 'field__label', text: '🏷️ 작품 이름 붙이기' }),
@@ -743,7 +801,10 @@ const App = (() => {
       storyBox,
 
       el('div', { class: 'actions' }, [
-        UI.btn('💾 기기에 저장하기', { kind: 'primary', onClick: () => r.blobs.forEach((b, i) => UI.download(b, fileName(i))) }),
+        UI.btn('💾 기기에 저장하기', { kind: 'primary', onClick: () => {
+          const blobs = outputBlobs();
+          blobs.forEach((b, i) => UI.download(b, fileName(i, blobs)));
+        }}),
         keepBtn
       ]),
       saveMsg,

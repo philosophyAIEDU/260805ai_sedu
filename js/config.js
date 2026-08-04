@@ -17,7 +17,7 @@ const CFG = {
   DEFAULT_SETTINGS: {
     apiKey: '',
     videoDailyLimit: 3,      // 0~10 (0이면 영상 기능 잠김)
-    features: { image: true, song: true, video: true, edit: true, book: true },
+    features: { image: true, song: true, video: true, edit: true, book: true, story: true },
     choiceCount: 4,          // 2 / 3 / 4
     fontSize: 'm',           // s / m / l / xl
     soundEffects: false,     // 기본 꺼짐
@@ -32,7 +32,16 @@ const CFG = {
     { id: 'song',  emoji: '🎵', label: '노래 만들기',    desc: '내 이야기로 노래를 만들어요',            theme: 'mint'   },
     { id: 'video', emoji: '🎬', label: '영상 만들기',    desc: '내 이야기로 짧은 영상을 만들어요',        theme: 'sky'    },
     { id: 'edit',  emoji: '🖍️', label: '내 그림 바꾸기', desc: '내가 그린 그림에 색을 칠하거나 배경을 바꿔요', theme: 'butter' },
-    { id: 'book',  emoji: '📖', label: '그림책 만들기',  desc: '그림 3~4장으로 이야기책을 만들어요',      theme: 'lilac'  }
+    { id: 'book',  emoji: '📖', label: '그림책 만들기',  desc: '그림 3~4장으로 이야기책을 만들어요',      theme: 'lilac'  },
+    // 글자 모델만 있으면 되는 기능 — 무료 API 키로도 잘 동작합니다.
+    { id: 'story', emoji: '📝', label: '이야기 만들기',  desc: '고른 것으로 이야기를 만들고 읽어줘요',    theme: 'rose'   }
+  ],
+
+  /* ---------- 첫 화면에서 갈 수 있는 다른 앱 ----------
+     여기에 추가하면 홈 화면 아래쪽에 카드로 나타납니다. */
+  LINKS: [
+    { emoji: '🎼', label: 'AI 감각 창작 수업', desc: '다른 창작 수업 앱으로 가요',
+      url: 'https://hkstudent.netlify.app/' }
   ],
 
   /* ---------- 주제 ---------- */

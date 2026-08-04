@@ -98,6 +98,50 @@ const API = (() => {
     }
   }
 
+  /* =========================================================
+     키 확인하기 — 이 키로 어떤 기능을 쓸 수 있는지 알아봅니다.
+     · 모델 목록 조회(GET)는 생성 요청이 아니라서 비용이 들지 않습니다.
+     · 글자 모델만 아주 짧은 실제 호출로 한도까지 확인합니다.
+     ========================================================= */
+  async function listModels() {
+    if (!hasKey()) throw new ApiError('API 키가 아직 없어요.', 'nokey');
+    const names = [];
+    let pageToken = '';
+    for (let page = 0; page < 5; page++) {
+      const url = `${CFG.API_BASE}/models?pageSize=200${pageToken ? '&pageToken=' + encodeURIComponent(pageToken) : ''}`;
+      const res = await fetch(url, { headers: { 'x-goog-api-key': key() } });
+      if (!res.ok) {
+        let detail = '';
+        try { const j = await res.json(); detail = (j.error && j.error.message) || ''; } catch (_) {}
+        lastError = { status: res.status, message: detail || `HTTP ${res.status}`, model: '(models.list)', method: 'GET' };
+        throw new ApiError(detail || `모델 목록을 가져오지 못했어요. (${res.status})`, res.status === 403 ? 'nokey' : 'api');
+      }
+      const j = await res.json();
+      (j.models || []).forEach(m => names.push(String(m.name || '').replace(/^models\//, '')));
+      pageToken = j.nextPageToken || '';
+      if (!pageToken) break;
+    }
+    return names;
+  }
+
+  async function checkKey() {
+    const out = { models: [], available: {}, text: { ok: false, message: '' } };
+    out.models = await listModels();
+
+    const has = name => out.models.some(m => m === name || m.indexOf(name) === 0);
+    Object.keys(CFG.MODELS).forEach(k => { out.available[k] = has(CFG.MODELS[k]); });
+
+    // 글자 모델은 짧은 호출로 실제 한도까지 확인 (재시도 없이 한 번만)
+    try {
+      const t = await askText('"네" 라고만 답해 줘.', { temperature: 0, maxOutputTokens: 10, retries: 0 });
+      out.text = { ok: true, message: (t || '').slice(0, 20) };
+    } catch (e) {
+      out.text = { ok: false, message: (e && e.message) || '실패', kind: (e && e.kind) || 'api',
+                   status: lastError ? lastError.status : 0 };
+    }
+    return out;
+  }
+
   /* ---------- 응답 도우미 ---------- */
   function textOf(json) {
     const parts = json && json.candidates && json.candidates[0] &&
@@ -412,7 +456,7 @@ JSON 배열만 출력: [{"text":"...","image":"..."}, ...]`;
   }
 
   return {
-    hasKey, ApiError, askText, getLastError, setStatusHandler,
+    hasKey, ApiError, askText, getLastError, setStatusHandler, checkKey, listModels,
     makeChoices, makeStory, suggestTitles, describeDrawing,
     refinePrompt, localPrompt, describePicks,
     generateImage, editImage, generateMusic, generateVideo,

@@ -172,7 +172,8 @@ const Panels = (() => {
           }})
         ]),
         keyState,
-        el('p', { class: 'field__hint', text: '키는 이 기기의 브라우저 저장소에만 저장되고 다른 곳으로 보내지 않아요. 공용 태블릿이라면 수업이 끝난 뒤 지워 주세요.' })
+        el('p', { class: 'field__hint', text: '키는 이 기기의 브라우저 저장소에만 저장되고 다른 곳으로 보내지 않아요. 공용 태블릿이라면 수업이 끝난 뒤 지워 주세요.' }),
+        keyCheckSection()
       ])
     ]));
 
@@ -218,7 +219,9 @@ const Panels = (() => {
     CFG.MODES.forEach(m => {
       featGroup.appendChild(row(
         `${m.emoji} ${m.label}`,
-        m.id === 'video' ? '가장 비싼 기능이에요. 예산이 빠듯하면 꺼 두세요.' : m.desc,
+        m.id === 'video' ? '가장 비싼 기능이에요. 예산이 빠듯하면 꺼 두세요.'
+          : m.id === 'story' ? '글자 모델만 사용해서 무료 API 키로도 잘 됩니다. 비용이 가장 적어요.'
+          : m.desc,
         toggle(Store.all().features[m.id], v => Store.setFeature(m.id, v), `${m.label} 사용`)
       ));
     });
@@ -314,6 +317,90 @@ const Panels = (() => {
   }
 
   function openApiKeySetup() { openSettings({ focusKey: true }); }
+
+  /* ---------- 키 확인하기 ----------
+     이 키로 어떤 기능을 쓸 수 있는지 미리 알아보고, 못 쓰는 기능은 한 번에 끌 수 있게 합니다. */
+  function keyCheckSection() {
+    const result = el('div', { style: 'margin-top:10px;' });
+    const wrap = el('div', {}, [
+      el('div', { class: 'actions', style: 'justify-content:flex-start; margin-top:14px;' }, [
+        UI.btn('🔍 이 키로 무엇을 쓸 수 있는지 확인하기', { kind: 'sky', onClick: run })
+      ]),
+      el('p', { class: 'field__hint', text: '모델 목록을 확인하고 글자 모델만 아주 짧게 한 번 호출해 봅니다. 그림·노래·영상을 실제로 만들지 않으므로 생성 비용은 들지 않아요.' }),
+      result
+    ]);
+
+    const LABELS = {
+      text:  { emoji: '💬', name: '글자 (선택지 · 이야기 · 이름 제안)', feature: null },
+      image: { emoji: '🎨', name: '그림 만들기 · 내 그림 바꾸기',       feature: ['image', 'edit', 'book'] },
+      music: { emoji: '🎵', name: '노래 만들기',                      feature: ['song'] },
+      video: { emoji: '🎬', name: '영상 만들기',                      feature: ['video'] }
+    };
+
+    async function run() {
+      result.innerHTML = '';
+      result.appendChild(el('p', { class: 'field__hint', text: '확인하고 있어요…' }));
+      let r;
+      try {
+        r = await API.checkKey();
+      } catch (e) {
+        result.innerHTML = '';
+        result.appendChild(el('div', { class: 'notice' }, [
+          el('span', { class: 'notice__icon', 'aria-hidden': 'true', text: '⚠️' }),
+          el('span', { text: '확인하지 못했어요: ' + ((e && e.message) || '') })
+        ]));
+        return;
+      }
+
+      result.innerHTML = '';
+      const rows = el('div', {});
+      const missing = [];
+
+      Object.keys(LABELS).forEach(k => {
+        const L = LABELS[k];
+        let mark, note;
+        if (k === 'text') {
+          if (r.text.ok) { mark = '✅'; note = '잘 돼요'; }
+          else if (r.text.status === 429) { mark = '⚠️'; note = '한도 초과 (429) — 잠시 뒤 다시 확인해 주세요'; }
+          else { mark = '❌'; note = r.text.message || '쓸 수 없어요'; }
+        } else if (r.available[k]) {
+          mark = '✅'; note = '이 키로 보입니다 (실제 한도는 무료/유료 등급에 따라 다름)';
+        } else {
+          mark = '❌'; note = '이 키의 모델 목록에 없어요 — 무료 등급이거나 아직 권한이 없는 경우예요';
+          if (L.feature) missing.push.apply(missing, L.feature);
+        }
+        rows.appendChild(el('div', { class: 'switch-row' }, [
+          el('div', { class: 'switch-row__text' }, [
+            el('strong', { text: `${L.emoji} ${L.name}` }),
+            el('small', { text: `${CFG.MODELS[k]} — ${note}` })
+          ]),
+          el('span', { style: 'font-size:1.6em;', 'aria-label': mark === '✅' ? '사용 가능' : mark === '⚠️' ? '주의' : '사용 불가', text: mark })
+        ]));
+      });
+      result.appendChild(rows);
+
+      if (missing.length) {
+        result.appendChild(el('div', { class: 'notice' }, [
+          el('span', { class: 'notice__icon', 'aria-hidden': 'true', text: '💡' }),
+          el('span', { text: '쓸 수 없는 기능은 꺼 두면 학생이 눌렀다가 실패하는 일이 없어요. 글자 모델만 있으면 “📝 이야기 만들기”는 그대로 쓸 수 있으니, 무료 키로도 수업을 진행할 수 있어요.' })
+        ]));
+        result.appendChild(el('div', { class: 'actions', style: 'justify-content:flex-start;' }, [
+          UI.btn('❌ 표시된 기능 끄기', { kind: 'danger', onClick: () => {
+            Array.from(new Set(missing)).forEach(f => Store.setFeature(f, false));
+            UI.closeOverlay('settings');
+            setTimeout(() => { App.goHome(); openSettings(); }, 250);
+          }})
+        ]));
+      } else if (r.text.ok) {
+        result.appendChild(el('div', { class: 'notice notice--info' }, [
+          el('span', { class: 'notice__icon', 'aria-hidden': 'true', text: '🎉' }),
+          el('span', { text: '모두 준비됐어요. 다만 무료 등급이면 그림·노래·영상은 만들 때 429(한도 초과)가 날 수 있어요.' })
+        ]));
+      }
+    }
+
+    return wrap;
+  }
 
   function teacherDocs() {
     const wrap = el('div', {});
