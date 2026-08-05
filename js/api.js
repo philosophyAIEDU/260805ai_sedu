@@ -50,12 +50,53 @@ const API = (() => {
     return null;
   }
 
-  /* 사용량 초과(429)·일시적 오류(500·503)는 잠깐 기다렸다 스스로 다시 시도합니다. */
+  /* 429 응답에서 "어떤 한도"에 걸렸는지 읽기 — 분당 한도인지 하루 한도인지 구분합니다.
+     분당 한도는 잠깐 기다리면 풀리지만, 하루 한도는 기다려도 오늘은 풀리지 않습니다. */
+  function quotaInfoOf(errJson) {
+    const details = (errJson && errJson.error && errJson.error.details) || [];
+    const out = { perDay: false, perMinute: false, freeTier: false, items: [] };
+    for (const d of details) {
+      if (String(d['@type'] || '').indexOf('QuotaFailure') === -1) continue;
+      (d.violations || []).forEach(v => {
+        const id = String(v.quotaId || v.quotaMetric || '');
+        if (!id) return;
+        out.items.push(id + (v.quotaValue ? ` (한도 ${v.quotaValue})` : ''));
+        if (/PerDay/i.test(id)) out.perDay = true;
+        if (/PerMinute/i.test(id)) out.perMinute = true;
+        if (/free_?tier/i.test(id)) out.freeTier = true;
+      });
+    }
+    return out;
+  }
+
+  /* 하루 한도를 다 쓴 모델을 잠깐 기억해 둡니다.
+     같은 모델에 계속 요청을 보내 봤자 실패하고 기다리기만 하기 때문입니다.
+     (한도는 보통 하루가 지나면 풀리므로 10분 뒤에는 다시 시도해 봅니다.) */
+  const DAY_LIMIT_MEMO_MS = 10 * 60 * 1000;
+  const dayLimited = {};
+  function isDayLimited(model) {
+    const at = dayLimited[model];
+    return !!at && (Date.now() - at) < DAY_LIMIT_MEMO_MS;
+  }
+
+  /* 사용량 초과(429)·일시적 오류(500·503)는 잠깐 기다렸다 스스로 다시 시도합니다.
+     다만 이보다 오래 기다려야 한다면 학생을 기다리게 하지 않고 바로 알려 줍니다. */
   const RETRY_WAITS = [8, 20];   // 초
+  const MAX_WAIT_SEC = 40;
+
+  const DAY_LIMIT_MSG = '오늘 만들 수 있는 만큼 다 만들었어요. 내일 다시 만들어요.';
 
   async function callModel(model, method, body, timeoutMs, opts) {
     if (!hasKey()) throw new ApiError('API 키가 아직 없어요. 선생님용 설정에서 넣어 주세요.', 'nokey');
     const maxRetries = (opts && opts.retries != null) ? opts.retries : RETRY_WAITS.length;
+
+    // 방금 하루 한도를 다 쓴 모델이면 헛되이 기다리지 않고 바로 알려 줍니다.
+    // (결제를 새로 연결한 뒤 확인할 때처럼 꼭 보내야 하면 force로 건너뜁니다.)
+    if (isDayLimited(model) && !(opts && opts.force)) {
+      lastError = { status: 429, message: '하루 사용량을 다 써서 요청을 보내지 않았어요.', model, method,
+                    quota: { perDay: true, perMinute: false, freeTier: false, items: [] } };
+      throw new ApiError(DAY_LIMIT_MSG, 'quota-day');
+    }
 
     for (let attempt = 0; ; attempt++) {
       const ctrl = new AbortController();
@@ -75,15 +116,23 @@ const API = (() => {
       }
       clearTimeout(timer);
 
-      if (res.ok) return res.json();
+      if (res.ok) { delete dayLimited[model]; return res.json(); }
 
       let json = null, detail = '';
       try { json = await res.json(); detail = (json.error && json.error.message) || ''; } catch (_) {}
-      lastError = { status: res.status, message: detail || `HTTP ${res.status}`, model, method };
+      const quota = res.status === 429 ? quotaInfoOf(json) : null;
+      const asked = retryDelaySec(json);
+      lastError = { status: res.status, message: detail || `HTTP ${res.status}`, model, method, quota, retryAfter: asked };
+
+      // 하루 한도를 다 쓴 경우 — 기다려도 오늘은 풀리지 않으므로 바로 알려 줍니다.
+      if (res.status === 429 && quota && quota.perDay) {
+        dayLimited[model] = Date.now();
+        throw new ApiError(DAY_LIMIT_MSG, 'quota-day');
+      }
 
       const retriable = res.status === 429 || res.status === 500 || res.status === 503;
-      if (retriable && attempt < maxRetries) {
-        const wait = retryDelaySec(json) || RETRY_WAITS[Math.min(attempt, RETRY_WAITS.length - 1)];
+      const wait = asked || RETRY_WAITS[Math.min(attempt, RETRY_WAITS.length - 1)];
+      if (retriable && attempt < maxRetries && wait <= MAX_WAIT_SEC) {
         say(`조금만 더 기다려 주세요… (${wait}초 뒤에 다시 해 볼게요)`);
         await sleep(wait * 1000);
         say(null);
@@ -132,12 +181,14 @@ const API = (() => {
     Object.keys(CFG.MODELS).forEach(k => { out.available[k] = has(CFG.MODELS[k]); });
 
     // 글자 모델은 짧은 호출로 실제 한도까지 확인 (재시도 없이 한 번만)
+    // 결제를 새로 연결한 뒤 바로 확인할 수 있도록, 한도 기억은 무시하고 실제로 보내 봅니다.
     try {
-      const t = await askText('"네" 라고만 답해 줘.', { temperature: 0, maxOutputTokens: 10, retries: 0 });
+      const t = await askText('"네" 라고만 답해 줘.', { temperature: 0, maxOutputTokens: 10, retries: 0, force: true });
       out.text = { ok: true, message: (t || '').slice(0, 20) };
     } catch (e) {
       out.text = { ok: false, message: (e && e.message) || '실패', kind: (e && e.kind) || 'api',
-                   status: lastError ? lastError.status : 0 };
+                   status: lastError ? lastError.status : 0,
+                   quota: lastError ? lastError.quota : null };
     }
     return out;
   }
@@ -189,7 +240,7 @@ const API = (() => {
         maxOutputTokens: o.maxOutputTokens || 700,
         responseMimeType: o.json ? 'application/json' : 'text/plain'
       }
-    }, 30000, { retries: o.retries != null ? o.retries : 0 });
+    }, 30000, { retries: o.retries != null ? o.retries : 0, force: !!o.force });
     return textOf(json);
   }
 
@@ -456,7 +507,7 @@ JSON 배열만 출력: [{"text":"...","image":"..."}, ...]`;
   }
 
   return {
-    hasKey, ApiError, askText, getLastError, setStatusHandler, checkKey, listModels,
+    hasKey, ApiError, askText, getLastError, setStatusHandler, checkKey, listModels, isDayLimited,
     makeChoices, makeStory, suggestTitles, describeDrawing,
     refinePrompt, localPrompt, describePicks,
     generateImage, editImage, generateMusic, generateVideo,

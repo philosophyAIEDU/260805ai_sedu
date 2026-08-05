@@ -608,17 +608,29 @@ const App = (() => {
     UI.setStep('잠깐만요');
     const msg = (e && e.message) || '지금은 만들 수 없었어요.';
     const needKey = (e && e.kind === 'nokey') || !API.hasKey();
+
+    /* 하루 사용량을 다 쓴 경우 — 다시 눌러도 오늘은 되지 않으므로
+       "다시 만들기" 대신 지금 할 수 있는 것을 안내합니다. */
+    const dayLimit = (e && e.kind === 'quota-day');
+    const canStory = dayLimit && ctx && ctx.mode !== 'story' &&
+                     (Store.get('features') || {}).story !== false &&
+                     !API.isDayLimited(CFG.MODELS.text);
+
     UI.render([
-      UI.title('조금 이따 다시 해 볼까요?', ' '),
+      UI.title(dayLimit ? '오늘은 여기까지예요' : '조금 이따 다시 해 볼까요?', ' '),
       el('div', { class: 'making' }, [
-        el('div', { style: 'font-size:4em;', 'aria-hidden': 'true', text: '🌤️' }),
-        el('p', { class: 'making__msg', text: '아직 다 만들지 못했어요.' }),
-        el('p', { class: 'making__sub', text: msg })
+        el('div', { style: 'font-size:4em;', 'aria-hidden': 'true', text: dayLimit ? '🌙' : '🌤️' }),
+        el('p', { class: 'making__msg', text: dayLimit ? '오늘 만들 수 있는 양을 다 썼어요.' : '아직 다 만들지 못했어요.' }),
+        el('p', { class: 'making__sub', text: dayLimit ? '내일 다시 만들 수 있어요.' : msg })
       ]),
+      canStory ? UI.notice('그림은 내일 다시 만들 수 있어요. 지금은 “이야기 만들기”를 해 볼까요?', 'info', '📝') : null,
       el('div', { class: 'actions' }, [
         UI.btn('처음으로', { onClick: goHome }),
         needKey ? UI.btn('🔑 API 키 넣기', { kind: 'sky', onClick: () => Panels.openApiKeySetup() }) : null,
-        UI.btn('다시 만들기', { kind: 'primary', onClick: startMaking })
+        canStory ? UI.btn('📝 이야기 만들기', { kind: 'primary', onClick: () => start('story') }) : null,
+        // 하루 한도일 때도 막다른 길이 되지 않게 조용한 다시 시도를 남겨 둡니다.
+        // (한도를 기억하는 동안에는 요청을 보내지 않으므로 사용량이 더 줄지 않아요.)
+        UI.btn('다시 만들기', { kind: dayLimit ? 'ghost' : 'primary', onClick: startMaking })
       ]),
       teacherErrorDetail(e)
     ]);
@@ -632,11 +644,30 @@ const App = (() => {
 
     const tips = [];
     if (status === 429) {
-      tips.push('요청 한도를 넘었을 때 나오는 오류입니다(429). 아래를 확인해 주세요.');
-      tips.push('· 무료 등급은 분당·하루 요청 수가 적습니다. 1~2분 뒤에 다시 시도해 보세요.');
-      tips.push('· 그림·노래·영상 모델은 결제가 연결된 프로젝트에서만 넉넉히 쓸 수 있습니다.');
-      tips.push('· 한 반이 같은 키를 함께 쓰면 한도에 빨리 닿습니다. 순서대로 만들게 하거나 키를 나눠 주세요.');
-      tips.push('· Google AI Studio → API key → 사용량/한도에서 남은 양을 확인할 수 있습니다.');
+      const q = (info && info.quota) || {};
+      if (q.perDay) {
+        tips.push('하루 사용량을 다 썼습니다(429). 기다려도 오늘은 풀리지 않아 다시 시도하지 않았습니다.');
+        tips.push('· 하루 한도는 태평양 시간 자정(한국 시간 오후 4~5시경)에 초기화됩니다.');
+        tips.push('· 오늘 더 써야 한다면 Google AI Studio에서 결제를 연결해 유료 등급으로 올려 주세요.');
+        tips.push('· 결제를 방금 연결하셨다면 등급이 반영되기까지 몇 분 걸릴 수 있습니다. 설정 → “이 키로 무엇을 쓸 수 있는지 확인하기”로 지금 되는지 확인하고, 화면을 새로고침한 뒤 다시 만들어 주세요.');
+      } else if (q.perMinute) {
+        tips.push('분당 요청 한도를 넘었습니다(429). 1~2분 뒤에는 다시 됩니다.');
+        tips.push('· 여러 학생이 동시에 만들기를 누르면 금방 걸립니다. 순서대로 만들게 해 주세요.');
+      } else {
+        tips.push('요청 한도를 넘었을 때 나오는 오류입니다(429). 아래를 확인해 주세요.');
+        tips.push('· 무료 등급은 분당·하루 요청 수가 적습니다. 1~2분 뒤에 다시 시도해 보세요.');
+      }
+      if (q.freeTier) {
+        tips.push('· 걸린 한도가 “무료 등급(FreeTier)”입니다. 결제를 하셨다면, 결제 계정이 연결된 프로젝트와 이 API 키가 만들어진 프로젝트가 서로 다를 수 있습니다. Google AI Studio → API keys 목록에서 키 옆의 프로젝트 이름을 확인해 주세요.');
+      }
+      if (q.freeTier || !q.items || !q.items.length) {
+        tips.push('· 그림·노래·영상 모델은 무료 등급 한도가 매우 적거나 없습니다. 결제가 연결된 프로젝트에서 넉넉히 쓸 수 있습니다.');
+        tips.push('· 무료 키만 있다면 글자 모델만 쓰는 “이야기 만들기”는 그대로 쓸 수 있습니다.');
+      }
+      tips.push('· 한 반이 같은 키를 함께 쓰면 한도에 빨리 닿습니다. 키를 나눠 주시면 좋습니다.');
+      tips.push('· 설정 → “이 키로 무엇을 쓸 수 있는지 확인하기”와 Google AI Studio의 사용량/한도에서 남은 양을 볼 수 있습니다.');
+      if (q.items && q.items.length) tips.push('· 걸린 한도: ' + q.items.join(', '));
+      if (info && info.retryAfter) tips.push(`· 서버가 알려 준 재시도 권장 시간: ${info.retryAfter}초`);
     } else if (status === 404) {
       tips.push('모델을 찾지 못했습니다(404). 이 계정에서 아직 쓸 수 없는 모델일 수 있습니다.');
       tips.push('· js/config.js 의 CFG.MODELS 에서 모델 이름을 확인해 주세요.');
