@@ -77,20 +77,69 @@ const Panels = (() => {
 
   /* ================= 선생님용 설정 =================
      학생이 실수로 열지 않도록 "길게 누르기"로 엽니다.
+     짧게 눌렀을 때 아무 일도 없으면 고장으로 보이므로,
+     누르는 동안 진행 막대를 보여 주고 짧게 누르면 여는 방법을 알려 줍니다.
      (키보드로는 설정 단추에 포커스한 뒤 Enter로 바로 열립니다.) */
   const gear = document.getElementById('btn-settings');
-  let holdTimer = null;
+  const HOLD_MS  = 800;   // 이만큼 누르고 있으면 열립니다(css의 진행 막대 시간과 같게).
+  const MOVE_TOL = 16;    // 손가락이 이보다 많이 움직이면 누르기를 취소합니다.
 
-  function beginHold() {
-    clearTimeout(holdTimer);
-    holdTimer = setTimeout(() => { openSettings(); }, 1100);
+  gear.appendChild(el('span', { class: 'gear-hold', 'aria-hidden': 'true' }));
+  const gearHint = el('span', {
+    class: 'hold-hint', 'aria-hidden': 'true', hidden: true,
+    text: '⚙ 설정은 1초쯤 꾹 눌러 주세요.'
+  });
+  gear.closest('.topbar').appendChild(gearHint);
+
+  let holdTimer = null;
+  let hintTimer = null;
+  let holdFrom  = null;   // 누르기 시작한 자리 {x, y}
+  let holdDone  = false;  // 길게 눌러 이미 열렸는지
+
+  function showHint() {
+    clearTimeout(hintTimer);
+    gearHint.hidden = false;
+    hintTimer = setTimeout(() => { gearHint.hidden = true; }, 3500);
+    UI.announce('설정을 열려면 설정 단추를 1초쯤 길게 누르세요.');
   }
-  function cancelHold() { clearTimeout(holdTimer); }
+  function hideHint() { clearTimeout(hintTimer); gearHint.hidden = true; }
+
+  function beginHold(e) {
+    holdDone = false;
+    holdFrom = { x: e.clientX, y: e.clientY };
+    gear.classList.add('is-holding');
+    // 손가락이 단추 밖으로 조금 벗어나도 누르기가 이어지도록 포인터를 붙잡아 둡니다.
+    try { gear.setPointerCapture(e.pointerId); } catch (_) {}
+    clearTimeout(holdTimer);
+    holdTimer = setTimeout(() => {
+      holdDone = true;
+      endHold();
+      hideHint();
+      Store.beep('tap');
+      openSettings();
+    }, HOLD_MS);
+  }
+  function endHold() {
+    clearTimeout(holdTimer);
+    holdTimer = null;
+    holdFrom  = null;
+    gear.classList.remove('is-holding');
+  }
 
   gear.addEventListener('pointerdown', beginHold);
-  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => gear.addEventListener(ev, cancelHold));
+  gear.addEventListener('pointermove', e => {
+    if (!holdFrom) return;
+    if (Math.abs(e.clientX - holdFrom.x) > MOVE_TOL || Math.abs(e.clientY - holdFrom.y) > MOVE_TOL) endHold();
+  });
+  gear.addEventListener('pointerup', () => {
+    const wasHolding = !!holdTimer;
+    endHold();
+    if (wasHolding && !holdDone) showHint();   // 짧게 눌렀어요 → 여는 방법을 알려 줍니다.
+  });
+  gear.addEventListener('pointercancel', endHold);
+  gear.addEventListener('contextmenu', e => e.preventDefault());  // 길게 누를 때 뜨는 시스템 메뉴 막기
   gear.addEventListener('keydown', e => {
-    if (e.key === 'Enter' || e.code === 'Space') { e.preventDefault(); openSettings(); }
+    if (e.key === 'Enter' || e.code === 'Space') { e.preventDefault(); hideHint(); openSettings(); }
   });
   gear.addEventListener('click', e => e.preventDefault());
 
@@ -137,6 +186,7 @@ const Panels = (() => {
 
   function openSettings(opts) {
     const o = opts || {};
+    hideHint();
     const body = document.getElementById('settings-body');
     body.innerHTML = '';
 

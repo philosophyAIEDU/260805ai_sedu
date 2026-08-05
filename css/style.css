@@ -157,6 +157,54 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .icon-btn__text { font-size: .9em; }
 @media (max-width: 520px) { .icon-btn__text { display: none; } }
 
+/* 설정 단추 — 길게 눌러서 엽니다(학생이 실수로 열지 않도록) */
+#btn-settings {
+  position: relative;
+  touch-action: none;            /* 길게 누르는 동안 스크롤·확대로 취소되지 않게 */
+  -webkit-touch-callout: none;   /* 길게 누를 때 뜨는 시스템 메뉴 막기 */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* 누르고 있는 동안 차오르는 막대 — “반응이 없다”고 느끼지 않도록 */
+.gear-hold {
+  position: absolute;
+  left: 8px; right: 8px; bottom: 6px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--peach-deep);
+  transform: scaleX(0);
+  transform-origin: left center;
+  opacity: 0;
+  pointer-events: none;
+}
+#btn-settings.is-holding .gear-hold {
+  opacity: 1;
+  transform: scaleX(1);
+  transition: transform .8s linear, opacity .2s var(--ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  #btn-settings.is-holding .gear-hold { transition: opacity .2s linear; }
+}
+
+/* 짧게 눌렀을 때 나오는 안내 말풍선 (상단 막대를 기준으로 놓입니다) */
+.hold-hint {
+  position: absolute;
+  top: calc(100% - 2px);
+  right: 16px;
+  z-index: 30;
+  width: max-content;
+  max-width: min(76vw, 300px);
+  padding: 10px 14px;
+  background: var(--ink);
+  color: #FFF8F2;
+  font-size: .8em;
+  font-weight: 700;
+  line-height: 1.45;
+  border-radius: 14px;
+  box-shadow: var(--shadow-lift);
+}
+
 /* =========================== 화면 본문 =========================== */
 .screen {
   flex: 1;
