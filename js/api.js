@@ -187,7 +187,8 @@ const API = (() => {
       out.text = { ok: true, message: (t || '').slice(0, 20) };
     } catch (e) {
       out.text = { ok: false, message: (e && e.message) || '실패', kind: (e && e.kind) || 'api',
-                   status: lastError ? lastError.status : 0 };
+                   status: lastError ? lastError.status : 0,
+                   quota: lastError ? lastError.quota : null };
     }
     return out;
   }

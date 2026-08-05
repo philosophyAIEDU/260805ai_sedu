@@ -411,7 +411,12 @@ const Panels = (() => {
         let mark, note;
         if (k === 'text') {
           if (r.text.ok) { mark = '✅'; note = '잘 돼요'; }
-          else if (r.text.status === 429) { mark = '⚠️'; note = '한도 초과 (429) — 잠시 뒤 다시 확인해 주세요'; }
+          else if (r.text.status === 429) {
+            mark = '⚠️';
+            note = (r.text.quota && r.text.quota.freeTier)
+              ? '무료 등급 한도에 걸렸어요 (429) — 이 키는 아직 무료 등급입니다'
+              : '한도 초과 (429) — 잠시 뒤 다시 확인해 주세요';
+          }
           else { mark = '❌'; note = r.text.message || '쓸 수 없어요'; }
         } else if (r.available[k]) {
           mark = '✅'; note = '이 키로 보입니다 (실제 한도는 무료/유료 등급에 따라 다름)';
@@ -428,6 +433,15 @@ const Panels = (() => {
         ]));
       });
       result.appendChild(rows);
+
+      /* 결제를 했는데도 "무료 등급 한도"에 걸린다면, 결제 계정이 연결된 프로젝트와
+         이 키가 속한 프로젝트가 서로 다른 경우가 대부분입니다. */
+      if (r.text.status === 429 && r.text.quota && r.text.quota.freeTier) {
+        result.appendChild(el('div', { class: 'notice' }, [
+          el('span', { class: 'notice__icon', 'aria-hidden': 'true', text: '💳' }),
+          el('span', { text: '결제를 하셨는데도 이 표시가 나온다면, 결제 계정이 연결된 프로젝트와 이 API 키가 만들어진 프로젝트가 서로 다를 수 있어요. Google AI Studio → API keys 목록에서 키 옆의 프로젝트 이름을 확인하고, 결제가 연결된 프로젝트의 키로 바꿔 주세요.' })
+        ]));
+      }
 
       if (missing.length) {
         result.appendChild(el('div', { class: 'notice' }, [
