@@ -16,7 +16,11 @@ const API = (() => {
     'cheerful and calm mood, no text, no scary or violent or sad elements, age-appropriate for young children, ' +
     'even soft lighting without harsh contrast or strobing.';
 
-  const NEGATIVE = 'scary, violent, sad, dark, horror, weapon, blood, realistic photo of a real person, text, watermark';
+  /* 영상 모델은 negativePrompt 같은 별도 항목을 받지 않는 경우가 있어,
+     피해야 할 것도 프롬프트 안에 함께 적어 보냅니다. */
+  const AVOID_TEXT =
+    ' Avoid anything scary, violent, sad or dark, no weapons, no blood, no horror, ' +
+    'no realistic photo of a real person, no text or watermark.';
 
   function key() { return (Store.get('apiKey') || '').trim(); }
   function hasKey() { return key().length > 0; }
@@ -96,6 +100,19 @@ const API = (() => {
   const DAY_LIMIT_MSG = '오늘 만들 수 있는 만큼 다 만들었어요. 내일 다시 만들어요.';
   const SPEND_CAP_MSG = '지금은 만들 수 없어요. 선생님께 알려 주세요.';
 
+  /* 보낼 내용에서 이름이 name 인 항목 하나를 찾아 지웁니다.
+     (parameters / generationConfig / instances 안까지 살펴봅니다.) */
+  function dropField(body, name) {
+    const spots = [body, body.parameters, body.generationConfig].concat(body.instances || []);
+    for (const spot of spots) {
+      if (spot && typeof spot === 'object' && Object.prototype.hasOwnProperty.call(spot, name)) {
+        delete spot[name];
+        return true;
+      }
+    }
+    return false;
+  }
+
   async function callModel(model, method, body, timeoutMs, opts) {
     if (!hasKey()) throw new ApiError('API 키가 아직 없어요. 선생님용 설정에서 넣어 주세요.', 'nokey');
     const maxRetries = (opts && opts.retries != null) ? opts.retries : RETRY_WAITS.length;
@@ -112,6 +129,7 @@ const API = (() => {
       throw new ApiError(cap ? SPEND_CAP_MSG : DAY_LIMIT_MSG, held.kind);
     }
 
+    let dropped = 0;               // 모델이 받지 않아 빼 버린 항목 수
     for (let attempt = 0; ; attempt++) {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), timeoutMs || 60000);
@@ -150,6 +168,17 @@ const API = (() => {
       if (res.status === 429 && quota && quota.perDay) {
         holdOff[model] = { at: Date.now(), kind: 'quota-day' };
         throw new ApiError(DAY_LIMIT_MSG, 'quota-day');
+      }
+
+      // "이 항목은 이 모델에서 지원하지 않는다"고 알려 주면 그 항목만 빼고 곧바로 다시 보냅니다.
+      // 모델이 바뀌면서 받지 않게 된 항목 하나 때문에 기능 전체가 멈추지 않도록 하는 안전장치입니다.
+      if (res.status === 400 && dropped < 3) {
+        const m = detail.match(/[`'"]?([A-Za-z_][A-Za-z0-9_]*)[`'"]?\s+is\s?n['’]?t supported by this model/i);
+        if (m && dropField(body, m[1])) {
+          dropped++;
+          attempt--;               // 이 재요청은 사용량 초과 재시도 횟수로 세지 않습니다.
+          continue;
+        }
       }
 
       const retriable = res.status === 429 || res.status === 500 || res.status === 503;
@@ -466,12 +495,13 @@ ${ctx.heroName ? '주인공 이름: ' + ctx.heroName : ''}
      8) 영상 만들기 (veo, 오래 걸리는 작업 → 상태 확인 반복)
      ========================================================= */
   async function generateVideo(prompt, att, onTick) {
-    const instance = { prompt };
+    // 이 영상 모델은 negativePrompt 항목을 받지 않으므로 프롬프트 안에 적어 보냅니다.
+    const instance = { prompt: prompt + AVOID_TEXT };
     if (att) instance.image = { bytesBase64Encoded: att.base64, mimeType: att.mimeType };
 
     const start = await callModel(CFG.MODELS.video, 'predictLongRunning', {
       instances: [instance],
-      parameters: { aspectRatio: '16:9', sampleCount: 1, personGeneration: 'dont_allow', negativePrompt: NEGATIVE }
+      parameters: { aspectRatio: '16:9', sampleCount: 1, personGeneration: 'dont_allow' }
     }, 60000);
 
     const opName = start.name;
