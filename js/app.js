@@ -628,7 +628,9 @@ const App = (() => {
         UI.btn('처음으로', { onClick: goHome }),
         needKey ? UI.btn('🔑 API 키 넣기', { kind: 'sky', onClick: () => Panels.openApiKeySetup() }) : null,
         canStory ? UI.btn('📝 이야기 만들기', { kind: 'primary', onClick: () => start('story') }) : null,
-        dayLimit ? null : UI.btn('다시 만들기', { kind: 'primary', onClick: startMaking })
+        // 하루 한도일 때도 막다른 길이 되지 않게 조용한 다시 시도를 남겨 둡니다.
+        // (한도를 기억하는 동안에는 요청을 보내지 않으므로 사용량이 더 줄지 않아요.)
+        UI.btn('다시 만들기', { kind: dayLimit ? 'ghost' : 'primary', onClick: startMaking })
       ]),
       teacherErrorDetail(e)
     ]);
@@ -647,6 +649,7 @@ const App = (() => {
         tips.push('하루 사용량을 다 썼습니다(429). 기다려도 오늘은 풀리지 않아 다시 시도하지 않았습니다.');
         tips.push('· 하루 한도는 태평양 시간 자정(한국 시간 오후 4~5시경)에 초기화됩니다.');
         tips.push('· 오늘 더 써야 한다면 Google AI Studio에서 결제를 연결해 유료 등급으로 올려 주세요.');
+        tips.push('· 결제를 방금 연결하셨다면 등급이 반영되기까지 몇 분 걸릴 수 있습니다. 설정 → “이 키로 무엇을 쓸 수 있는지 확인하기”로 지금 되는지 확인하고, 화면을 새로고침한 뒤 다시 만들어 주세요.');
       } else if (q.perMinute) {
         tips.push('분당 요청 한도를 넘었습니다(429). 1~2분 뒤에는 다시 됩니다.');
         tips.push('· 여러 학생이 동시에 만들기를 누르면 금방 걸립니다. 순서대로 만들게 해 주세요.');

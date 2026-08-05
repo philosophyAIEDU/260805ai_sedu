@@ -91,7 +91,8 @@ const API = (() => {
     const maxRetries = (opts && opts.retries != null) ? opts.retries : RETRY_WAITS.length;
 
     // 방금 하루 한도를 다 쓴 모델이면 헛되이 기다리지 않고 바로 알려 줍니다.
-    if (isDayLimited(model)) {
+    // (결제를 새로 연결한 뒤 확인할 때처럼 꼭 보내야 하면 force로 건너뜁니다.)
+    if (isDayLimited(model) && !(opts && opts.force)) {
       lastError = { status: 429, message: '하루 사용량을 다 써서 요청을 보내지 않았어요.', model, method,
                     quota: { perDay: true, perMinute: false, freeTier: false, items: [] } };
       throw new ApiError(DAY_LIMIT_MSG, 'quota-day');
@@ -180,8 +181,9 @@ const API = (() => {
     Object.keys(CFG.MODELS).forEach(k => { out.available[k] = has(CFG.MODELS[k]); });
 
     // 글자 모델은 짧은 호출로 실제 한도까지 확인 (재시도 없이 한 번만)
+    // 결제를 새로 연결한 뒤 바로 확인할 수 있도록, 한도 기억은 무시하고 실제로 보내 봅니다.
     try {
-      const t = await askText('"네" 라고만 답해 줘.', { temperature: 0, maxOutputTokens: 10, retries: 0 });
+      const t = await askText('"네" 라고만 답해 줘.', { temperature: 0, maxOutputTokens: 10, retries: 0, force: true });
       out.text = { ok: true, message: (t || '').slice(0, 20) };
     } catch (e) {
       out.text = { ok: false, message: (e && e.message) || '실패', kind: (e && e.kind) || 'api',
@@ -237,7 +239,7 @@ const API = (() => {
         maxOutputTokens: o.maxOutputTokens || 700,
         responseMimeType: o.json ? 'application/json' : 'text/plain'
       }
-    }, 30000, { retries: o.retries != null ? o.retries : 0 });
+    }, 30000, { retries: o.retries != null ? o.retries : 0, force: !!o.force });
     return textOf(json);
   }
 
