@@ -69,15 +69,24 @@ const API = (() => {
     return out;
   }
 
-  /* 하루 한도를 다 쓴 모델을 잠깐 기억해 둡니다.
-     같은 모델에 계속 요청을 보내 봤자 실패하고 기다리기만 하기 때문입니다.
-     (한도는 보통 하루가 지나면 풀리므로 10분 뒤에는 다시 시도해 봅니다.) */
-  const DAY_LIMIT_MEMO_MS = 10 * 60 * 1000;
-  const dayLimited = {};
-  function isDayLimited(model) {
-    const at = dayLimited[model];
-    return !!at && (Date.now() - at) < DAY_LIMIT_MEMO_MS;
+  /* 지출 한도(spend cap)를 넘긴 429 — 사용량이 아니라 설정 문제라 기다려도 풀리지 않습니다.
+     선생님이 AI Studio에서 한도를 올려 주어야 합니다. */
+  function isSpendCap(errJson, detail) {
+    const msg = detail || (errJson && errJson.error && errJson.error.message) || '';
+    return /spend(ing)?[ _-]?cap/i.test(msg);
   }
+
+  /* 기다려도 풀리지 않는 한도에 걸린 대상을 잠깐 기억해 둡니다.
+     계속 요청을 보내 봤자 실패하고 기다리기만 하기 때문입니다.
+     키는 모델 이름, 프로젝트 전체에 걸리는 지출 한도는 '*' 를 씁니다.
+     (한도는 하루가 지나거나 선생님이 올리면 풀리므로 10분 뒤에는 다시 시도해 봅니다.) */
+  const HOLD_OFF_MS = 10 * 60 * 1000;
+  const holdOff = {};
+  function heldOff(model) {
+    const h = holdOff['*'] || holdOff[model];
+    return (h && (Date.now() - h.at) < HOLD_OFF_MS) ? h : null;
+  }
+  function isDayLimited(model) { return !!heldOff(model); }
 
   /* 사용량 초과(429)·일시적 오류(500·503)는 잠깐 기다렸다 스스로 다시 시도합니다.
      다만 이보다 오래 기다려야 한다면 학생을 기다리게 하지 않고 바로 알려 줍니다. */
@@ -85,17 +94,22 @@ const API = (() => {
   const MAX_WAIT_SEC = 40;
 
   const DAY_LIMIT_MSG = '오늘 만들 수 있는 만큼 다 만들었어요. 내일 다시 만들어요.';
+  const SPEND_CAP_MSG = '지금은 만들 수 없어요. 선생님께 알려 주세요.';
 
   async function callModel(model, method, body, timeoutMs, opts) {
     if (!hasKey()) throw new ApiError('API 키가 아직 없어요. 선생님용 설정에서 넣어 주세요.', 'nokey');
     const maxRetries = (opts && opts.retries != null) ? opts.retries : RETRY_WAITS.length;
 
-    // 방금 하루 한도를 다 쓴 모델이면 헛되이 기다리지 않고 바로 알려 줍니다.
-    // (결제를 새로 연결한 뒤 확인할 때처럼 꼭 보내야 하면 force로 건너뜁니다.)
-    if (isDayLimited(model) && !(opts && opts.force)) {
-      lastError = { status: 429, message: '하루 사용량을 다 써서 요청을 보내지 않았어요.', model, method,
-                    quota: { perDay: true, perMinute: false, freeTier: false, items: [] } };
-      throw new ApiError(DAY_LIMIT_MSG, 'quota-day');
+    // 방금 한도에 걸린 대상이면 헛되이 기다리지 않고 바로 알려 줍니다.
+    // (결제·한도를 새로 손본 뒤 확인할 때처럼 꼭 보내야 하면 force로 건너뜁니다.)
+    const held = !(opts && opts.force) && heldOff(model);
+    if (held) {
+      const cap = held.kind === 'quota-cap';
+      lastError = { status: 429, model, method,
+                    message: cap ? '지출 한도를 넘겨서 요청을 보내지 않았어요.' : '하루 사용량을 다 써서 요청을 보내지 않았어요.',
+                    spendCap: cap,
+                    quota: { perDay: !cap, perMinute: false, freeTier: false, items: [] } };
+      throw new ApiError(cap ? SPEND_CAP_MSG : DAY_LIMIT_MSG, held.kind);
     }
 
     for (let attempt = 0; ; attempt++) {
@@ -116,17 +130,25 @@ const API = (() => {
       }
       clearTimeout(timer);
 
-      if (res.ok) { delete dayLimited[model]; return res.json(); }
+      if (res.ok) { delete holdOff[model]; delete holdOff['*']; return res.json(); }
 
       let json = null, detail = '';
       try { json = await res.json(); detail = (json.error && json.error.message) || ''; } catch (_) {}
       const quota = res.status === 429 ? quotaInfoOf(json) : null;
+      const spendCap = res.status === 429 && isSpendCap(json, detail);
       const asked = retryDelaySec(json);
-      lastError = { status: res.status, message: detail || `HTTP ${res.status}`, model, method, quota, retryAfter: asked };
+      lastError = { status: res.status, message: detail || `HTTP ${res.status}`, model, method, quota, spendCap, retryAfter: asked };
+
+      // 지출 한도를 넘긴 경우 — 선생님이 한도를 올려야 하므로 기다리지 않습니다.
+      // 프로젝트 전체에 걸리므로 다른 모델도 함께 쉬게 합니다.
+      if (spendCap) {
+        holdOff['*'] = { at: Date.now(), kind: 'quota-cap' };
+        throw new ApiError(SPEND_CAP_MSG, 'quota-cap');
+      }
 
       // 하루 한도를 다 쓴 경우 — 기다려도 오늘은 풀리지 않으므로 바로 알려 줍니다.
       if (res.status === 429 && quota && quota.perDay) {
-        dayLimited[model] = Date.now();
+        holdOff[model] = { at: Date.now(), kind: 'quota-day' };
         throw new ApiError(DAY_LIMIT_MSG, 'quota-day');
       }
 
@@ -188,7 +210,8 @@ const API = (() => {
     } catch (e) {
       out.text = { ok: false, message: (e && e.message) || '실패', kind: (e && e.kind) || 'api',
                    status: lastError ? lastError.status : 0,
-                   quota: lastError ? lastError.quota : null };
+                   quota: lastError ? lastError.quota : null,
+                   spendCap: !!(lastError && lastError.spendCap) };
     }
     return out;
   }
