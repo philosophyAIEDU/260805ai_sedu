@@ -612,25 +612,32 @@ const App = (() => {
     /* 하루 사용량을 다 쓴 경우 — 다시 눌러도 오늘은 되지 않으므로
        "다시 만들기" 대신 지금 할 수 있는 것을 안내합니다. */
     const dayLimit = (e && e.kind === 'quota-day');
+    /* 지출 한도(spend cap)를 넘긴 경우 — 선생님이 한도를 올려야 풀립니다. */
+    const spendCap = (e && e.kind === 'quota-cap');
     const canStory = dayLimit && ctx && ctx.mode !== 'story' &&
                      (Store.get('features') || {}).story !== false &&
                      !API.isDayLimited(CFG.MODELS.text);
 
+    const title = spendCap ? '선생님을 불러 주세요' : dayLimit ? '오늘은 여기까지예요' : '조금 이따 다시 해 볼까요?';
+    const emoji = spendCap ? '🔒' : dayLimit ? '🌙' : '🌤️';
+    const head  = spendCap ? '지금은 만들 수 없어요.' : dayLimit ? '오늘 만들 수 있는 양을 다 썼어요.' : '아직 다 만들지 못했어요.';
+    const sub   = spendCap ? '선생님이 설정을 고치면 다시 만들 수 있어요.' : dayLimit ? '내일 다시 만들 수 있어요.' : msg;
+
     UI.render([
-      UI.title(dayLimit ? '오늘은 여기까지예요' : '조금 이따 다시 해 볼까요?', ' '),
+      UI.title(title, ' '),
       el('div', { class: 'making' }, [
-        el('div', { style: 'font-size:4em;', 'aria-hidden': 'true', text: dayLimit ? '🌙' : '🌤️' }),
-        el('p', { class: 'making__msg', text: dayLimit ? '오늘 만들 수 있는 양을 다 썼어요.' : '아직 다 만들지 못했어요.' }),
-        el('p', { class: 'making__sub', text: dayLimit ? '내일 다시 만들 수 있어요.' : msg })
+        el('div', { style: 'font-size:4em;', 'aria-hidden': 'true', text: emoji }),
+        el('p', { class: 'making__msg', text: head }),
+        el('p', { class: 'making__sub', text: sub })
       ]),
       canStory ? UI.notice('그림은 내일 다시 만들 수 있어요. 지금은 “이야기 만들기”를 해 볼까요?', 'info', '📝') : null,
       el('div', { class: 'actions' }, [
         UI.btn('처음으로', { onClick: goHome }),
         needKey ? UI.btn('🔑 API 키 넣기', { kind: 'sky', onClick: () => Panels.openApiKeySetup() }) : null,
         canStory ? UI.btn('📝 이야기 만들기', { kind: 'primary', onClick: () => start('story') }) : null,
-        // 하루 한도일 때도 막다른 길이 되지 않게 조용한 다시 시도를 남겨 둡니다.
+        // 한도에 걸렸을 때도 막다른 길이 되지 않게 조용한 다시 시도를 남겨 둡니다.
         // (한도를 기억하는 동안에는 요청을 보내지 않으므로 사용량이 더 줄지 않아요.)
-        UI.btn('다시 만들기', { kind: dayLimit ? 'ghost' : 'primary', onClick: startMaking })
+        UI.btn('다시 만들기', { kind: (dayLimit || spendCap) ? 'ghost' : 'primary', onClick: startMaking })
       ]),
       teacherErrorDetail(e)
     ]);
@@ -643,7 +650,15 @@ const App = (() => {
     const status = info ? info.status : 0;
 
     const tips = [];
-    if (status === 429) {
+    if (status === 429 && info && info.spendCap) {
+      /* 사용량이 아니라 "프로젝트 지출 한도" 설정에 걸린 경우입니다.
+         잔액이 남아 있어도, 한도가 0이면 아무것도 만들어지지 않습니다. */
+      tips.push('사용량이 아니라 프로젝트의 지출 한도(spend cap)에 걸렸습니다. 기다려도 풀리지 않으니 한도를 올려 주세요.');
+      tips.push('· Google AI Studio → ai.studio/spend 에서 이 프로젝트의 월 지출 한도를 올려 주세요.');
+      tips.push('· 유료로 막 전환한 프로젝트는 지출 한도가 0으로 되어 있는 경우가 있습니다. 선불 잔액이 남아 있어도 한도가 0이면 아무것도 만들어지지 않습니다.');
+      tips.push('· 한도를 올린 뒤에는 화면을 새로고침하고 다시 만들어 주세요. (설정 → “이 키로 무엇을 쓸 수 있는지 확인하기”로 먼저 확인해 볼 수 있습니다)');
+      tips.push('· 수업에서 쓸 만큼만 한도를 정해 두면 예상치 못한 지출을 막을 수 있습니다.');
+    } else if (status === 429) {
       const q = (info && info.quota) || {};
       if (q.perDay) {
         tips.push('하루 사용량을 다 썼습니다(429). 기다려도 오늘은 풀리지 않아 다시 시도하지 않았습니다.');
