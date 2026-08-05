@@ -16,11 +16,11 @@ const API = (() => {
     'cheerful and calm mood, no text, no scary or violent or sad elements, age-appropriate for young children, ' +
     'even soft lighting without harsh contrast or strobing.';
 
-  /* 영상 모델은 negativePrompt 같은 별도 항목을 받지 않는 경우가 있어,
+  /* 영상 모델은 negativePrompt·personGeneration 같은 별도 항목을 받지 않아,
      피해야 할 것도 프롬프트 안에 함께 적어 보냅니다. */
   const AVOID_TEXT =
     ' Avoid anything scary, violent, sad or dark, no weapons, no blood, no horror, ' +
-    'no realistic photo of a real person, no text or watermark.';
+    'no real people and no realistic human faces, no text or watermark.';
 
   function key() { return (Store.get('apiKey') || '').trim(); }
   function hasKey() { return key().length > 0; }
@@ -100,6 +100,24 @@ const API = (() => {
   const DAY_LIMIT_MSG = '오늘 만들 수 있는 만큼 다 만들었어요. 내일 다시 만들어요.';
   const SPEND_CAP_MSG = '지금은 만들 수 없어요. 선생님께 알려 주세요.';
 
+  /* "이 항목(또는 이 값)은 지원하지 않는다"는 400 응답에서 항목 이름을 뽑아냅니다.
+     같은 뜻이라도 모델마다 문구가 달라서 몇 가지 형태를 함께 봅니다.
+       · `negativePrompt` isn't supported by this model.
+       · dont_allow for personGeneration is currently not supported.
+       · personGeneration is not supported. */
+  const UNSUPPORTED_PATTERNS = [
+    /for\s+[`'"]?([A-Za-z_][A-Za-z0-9_]*)[`'"]?\s+is\s+(?:currently\s+)?not supported/i,
+    /[`'"]?([A-Za-z_][A-Za-z0-9_]*)[`'"]?\s+is\s?n['’]?t supported/i,
+    /[`'"]?([A-Za-z_][A-Za-z0-9_]*)[`'"]?\s+is\s+(?:currently\s+)?not supported/i
+  ];
+  function unsupportedField(detail) {
+    for (const re of UNSUPPORTED_PATTERNS) {
+      const m = (detail || '').match(re);
+      if (m) return m[1];
+    }
+    return null;
+  }
+
   /* 보낼 내용에서 이름이 name 인 항목 하나를 찾아 지웁니다.
      (parameters / generationConfig / instances 안까지 살펴봅니다.) */
   function dropField(body, name) {
@@ -173,8 +191,8 @@ const API = (() => {
       // "이 항목은 이 모델에서 지원하지 않는다"고 알려 주면 그 항목만 빼고 곧바로 다시 보냅니다.
       // 모델이 바뀌면서 받지 않게 된 항목 하나 때문에 기능 전체가 멈추지 않도록 하는 안전장치입니다.
       if (res.status === 400 && dropped < 3) {
-        const m = detail.match(/[`'"]?([A-Za-z_][A-Za-z0-9_]*)[`'"]?\s+is\s?n['’]?t supported by this model/i);
-        if (m && dropField(body, m[1])) {
+        const field = unsupportedField(detail);
+        if (field && dropField(body, field)) {
           dropped++;
           attempt--;               // 이 재요청은 사용량 초과 재시도 횟수로 세지 않습니다.
           continue;
@@ -495,13 +513,14 @@ ${ctx.heroName ? '주인공 이름: ' + ctx.heroName : ''}
      8) 영상 만들기 (veo, 오래 걸리는 작업 → 상태 확인 반복)
      ========================================================= */
   async function generateVideo(prompt, att, onTick) {
-    // 이 영상 모델은 negativePrompt 항목을 받지 않으므로 프롬프트 안에 적어 보냅니다.
+    // 이 영상 모델은 negativePrompt·personGeneration 항목을 받지 않습니다.
+    // 그래서 사람이나 무서운 장면을 피하라는 내용도 프롬프트 안에 적어 보냅니다.
     const instance = { prompt: prompt + AVOID_TEXT };
     if (att) instance.image = { bytesBase64Encoded: att.base64, mimeType: att.mimeType };
 
     const start = await callModel(CFG.MODELS.video, 'predictLongRunning', {
       instances: [instance],
-      parameters: { aspectRatio: '16:9', sampleCount: 1, personGeneration: 'dont_allow' }
+      parameters: { aspectRatio: '16:9', sampleCount: 1 }
     }, 60000);
 
     const opName = start.name;
