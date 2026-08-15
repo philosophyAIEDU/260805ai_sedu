@@ -77,12 +77,14 @@ const App = (() => {
           theme: m.theme,
           disabled: locked || out,
           ariaLabel: `${m.label}. ${m.desc}. ${locked || out ? '오늘 영상은 다 만들었어요.' : '오늘 남은 횟수 ' + remaining + '번'}`,
+          speak: `${m.label}. ${m.desc}`,
           onDisabled: () => softMessage('오늘 영상은 다 만들었어요. 내일 또 만들어요!'),
           onClick: () => start(m.id)
         });
       }
       return UI.card({
         emoji: m.emoji, label: m.label, desc: m.desc, theme: m.theme,
+        speak: `${m.label}. ${m.desc}`,
         onClick: () => start(m.id)
       });
     });
@@ -189,27 +191,46 @@ const App = (() => {
     go(pos + 1);
   }
 
+  /* 카드에 붙는 읽어주기 — 글자를 읽기 어려운 학생을 위해
+     ① 카드마다 작은 🔊 단추, ② 아래에 "하나씩 읽어주기" 단추를 함께 둡니다. */
+  function readAloudRow(title, labels) {
+    if (!Speech.supported) return null;
+    return el('div', { class: 'actions' }, [
+      UI.btn('🔊 하나씩 읽어주기', {
+        kind: 'mint',
+        ariaLabel: '고를 것을 하나씩 읽어주기',
+        onClick: () => Speech.speakList([title].concat(labels))
+      }),
+      UI.btn('⏹ 그만 듣기', { onClick: () => Speech.stop() })
+    ]);
+  }
+
   /* ================= 1) 주제 ================= */
   function screenTopic() {
     Panels.setHelp('topic');
+    Speech.stop();
     const cards = CFG.TOPICS.map(t => UI.card({
       emoji: t.emoji, label: t.label, desc: t.desc, theme: t.theme,
+      speak: `${t.label}. ${t.desc}`,
       chosen: ctx.topic && ctx.topic.id === t.id,
       onClick: () => {
+        Speech.stop();
         if (!ctx.topic || ctx.topic.id !== t.id) ctx.choices = {};   // 주제가 바뀌면 선택지도 새로
         ctx.topic = t;
         advance();
       }
     }));
     UI.render([
-      UI.title('어디에서 일어나는 이야기인가요?', '마음에 드는 곳을 눌러 보세요.'),
-      UI.grid(cards)
+      UI.title('어디에서 일어나는 이야기인가요?', '마음에 드는 곳을 눌러 보세요. 🔊 를 누르면 읽어 줘요.'),
+      UI.grid(cards),
+      readAloudRow('어디에서 일어나는 이야기인가요?', CFG.TOPICS.map(t => t.label))
     ]);
   }
 
   /* ================= 2) 질문 ================= */
   async function screenQuestion(spec) {
     Panels.setHelp('question');
+    Speech.stop();
     const count = Number(Store.get('choiceCount')) || 4;
 
     // 이미 만들어 둔 선택지가 있으면 그대로 씁니다(뒤로 갔다 와도 그대로).
@@ -259,17 +280,20 @@ const App = (() => {
     } else {
       body = UI.grid(choices.map((c, i) => UI.card({
         emoji: c.emoji, label: c.label, theme: themes[i % themes.length],
+        speak: c.label,
         chosen: ctx.answers[spec.id] && ctx.answers[spec.id].label === c.label,
-        onClick: () => { ctx.answers[spec.id] = c; advance(); }
+        onClick: () => { Speech.stop(); ctx.answers[spec.id] = c; advance(); }
       })));
     }
 
     UI.render([
-      UI.title(spec.title, ready ? '하나를 골라 주세요. 틀린 답은 없어요.' : ' '),
+      UI.title(spec.title, ready ? '하나를 골라 주세요. 🔊 를 누르면 읽어 줘요.' : ' '),
       body,
+      ready ? readAloudRow(spec.title, choices.map(c => c.label)) : null,
       ready ? el('div', { class: 'actions' }, [
         UI.btn('🔁 다른 것 보여주세요', {
           onClick: async () => {
+            Speech.stop();
             delete ctx.choices[spec.id];
             screenQuestion(spec);
           }
@@ -285,9 +309,11 @@ const App = (() => {
       UI.title('그림책을 몇 장으로 만들까요?', '장수가 많으면 조금 더 오래 걸려요.'),
       UI.grid([
         UI.card({ emoji: '📗', label: '3장', desc: '짧고 빠르게 만들어요', theme: 'mint',
-          chosen: ctx.pageCount === 3, onClick: () => { ctx.pageCount = 3; advance(); } }),
+          speak: '세 장. 짧고 빠르게 만들어요',
+          chosen: ctx.pageCount === 3, onClick: () => { Speech.stop(); ctx.pageCount = 3; advance(); } }),
         UI.card({ emoji: '📘', label: '4장', desc: '조금 더 긴 이야기예요', theme: 'sky',
-          chosen: ctx.pageCount === 4, onClick: () => { ctx.pageCount = 4; advance(); } })
+          speak: '네 장. 조금 더 긴 이야기예요',
+          chosen: ctx.pageCount === 4, onClick: () => { Speech.stop(); ctx.pageCount = 4; advance(); } })
       ])
     ]);
   }
@@ -684,8 +710,19 @@ const App = (() => {
       if (q.items && q.items.length) tips.push('· 걸린 한도: ' + q.items.join(', '));
       if (info && info.retryAfter) tips.push(`· 서버가 알려 준 재시도 권장 시간: ${info.retryAfter}초`);
     } else if (status === 404) {
-      tips.push('모델을 찾지 못했습니다(404). 이 계정에서 아직 쓸 수 없는 모델일 수 있습니다.');
-      tips.push('· js/config.js 의 CFG.MODELS 에서 모델 이름을 확인해 주세요.');
+      tips.push('모델을 찾지 못했습니다(404). 모델 이름이 없거나, 그 모델이 이 방식(예: predict)을 받지 않을 때 나옵니다.');
+      if (info && info.usedInstead) {
+        tips.push(`· 이 키로 쓸 수 있는 “${info.usedInstead}” 로 자동으로 바꿔 다시 시도했지만 그것도 되지 않았습니다.`);
+      } else {
+        tips.push('· 이 키로 쓸 수 있는 같은 종류의 모델을 자동으로 찾아봤지만 마땅한 것이 없었습니다.');
+      }
+      if (info && info.available && info.available.length) {
+        tips.push('· 이 키로 보이는 비슷한 모델: ' + info.available.join(', '));
+        tips.push('· 위 이름 중 하나를 js/config.js 의 CFG.MODELS 에 적어 주시면 그대로 사용합니다.');
+      } else {
+        tips.push('· 설정 → “이 키로 무엇을 쓸 수 있는지 확인하기”를 눌러 이 키로 쓸 수 있는 모델을 확인해 주세요.');
+        tips.push('· 그림·노래·영상 모델은 결제가 연결된 프로젝트의 키에서만 보이는 경우가 많습니다.');
+      }
     } else if (status === 401 || status === 403) {
       tips.push('키 권한 문제입니다. 설정에서 API 키를 다시 넣어 주세요.');
     } else if (status === 0) {
@@ -798,8 +835,19 @@ const App = (() => {
       ]) : null
     ]);
 
-    /* --- 저장 --- */
-    const saveMsg = el('p', { class: 'field__hint', style: 'text-align:center;' });
+    /* --- 저장 ---
+       "저장했는데 어디에 있는지 모르겠다"는 말을 자주 듣습니다.
+       그래서 저장한 뒤에 ① 파일 이름과 ② 이 기기에서 찾아갈 곳을 함께 알려 주고,
+       태블릿에서는 사진첩·다른 앱으로 바로 보내는 길도 마련해 둡니다. */
+    const saveMsg = el('div', { class: 'save-note', hidden: true });
+
+    function showSaveNote(lines, emoji) {
+      saveMsg.innerHTML = '';
+      saveMsg.hidden = false;
+      saveMsg.appendChild(el('span', { class: 'save-note__icon', 'aria-hidden': 'true', text: emoji || '📁' }));
+      saveMsg.appendChild(el('div', {}, lines.filter(Boolean).map(t => el('p', { text: t }))));
+      UI.announce(lines.filter(Boolean).join(' '));
+    }
 
     function fileName(i, blobs) {
       const base = (ctx.title || '내작품').replace(/[\\/:*?"<>|]/g, '') || '내작품';
@@ -809,6 +857,28 @@ const App = (() => {
                 : 'png';
       return blobs.length > 1 ? `${base}-${i + 1}.${ext}` : `${base}.${ext}`;
     }
+
+    function fileNames(blobs) { return blobs.map((b, i) => fileName(i, blobs)); }
+
+    /* 사진첩·다른 앱으로 보내기 — 태블릿에서 다운로드 폴더를 찾기 어려울 때 훨씬 편합니다. */
+    const shareable = UI.canShareFiles(outputBlobs(), fileNames(outputBlobs()));
+    const shareBtn = shareable ? UI.btn('📤 사진에 담기 · 보내기', {
+      kind: 'mint',
+      ariaLabel: '사진 앱이나 다른 앱으로 보내기',
+      onClick: async () => {
+        const blobs = outputBlobs();
+        const names = fileNames(blobs);
+        const ok = await UI.shareFiles(blobs, names, ctx.title || '내가 만든 작품');
+        if (ok) {
+          showSaveNote([
+            '보냈어요!',
+            r.kind === 'image' || r.kind === 'book'
+              ? '“이미지 저장”을 고르면 사진 앱(갤러리)에 들어가요.'
+              : '고른 앱에서 확인해 보세요.'
+          ], '📤');
+        }
+      }
+    }) : null;
 
     const keepBtn = UI.btn('🗂 보관함에 담기', {
       kind: 'sky',
@@ -825,10 +895,12 @@ const App = (() => {
             dateText: UI.todayText()
           });
           ctx.savedId = id;
-          saveMsg.textContent = '보관함에 담았어요! 나중에 다시 볼 수 있어요.';
-          UI.announce('보관함에 담았어요.');
+          showSaveNote([
+            '보관함에 담았어요!',
+            '이 앱의 “🗂 작품 보관함”에서 언제든 다시 볼 수 있어요. (기기 밖으로 나가지 않아요)'
+          ], '🗂');
         } catch (_) {
-          saveMsg.textContent = '보관함에 담지 못했어요. 기기 저장 공간을 확인해 주세요.';
+          showSaveNote(['보관함에 담지 못했어요.', '기기 저장 공간을 확인해 주세요.'], '🙂');
         }
       }
     });
@@ -847,13 +919,30 @@ const App = (() => {
       storyBox,
 
       el('div', { class: 'actions' }, [
-        UI.btn('💾 기기에 저장하기', { kind: 'primary', onClick: () => {
-          const blobs = outputBlobs();
-          blobs.forEach((b, i) => UI.download(b, fileName(i, blobs)));
-        }}),
+        UI.btn('💾 기기에 내려받기', {
+          kind: 'primary',
+          ariaLabel: '작품을 이 기기에 파일로 내려받기',
+          onClick: () => {
+            const blobs = outputBlobs();
+            const names = fileNames(blobs);
+            blobs.forEach((b, i) => UI.download(b, names[i]));
+            showSaveNote([
+              names.length > 1
+                ? `「${names[0]}」 등 ${names.length}개 파일로 저장했어요.`
+                : `「${names[0]}」 이름으로 저장했어요.`,
+              UI.saveHint(),
+              shareable ? '사진 앱(갤러리)에 넣고 싶으면 아래 “📤 사진에 담기 · 보내기”를 눌러 보세요.' : null
+            ], '📁');
+          }
+        }),
+        shareBtn,
         keepBtn
       ]),
       saveMsg,
+      (r.kind === 'image' || r.kind === 'book')
+        ? el('p', { class: 'field__hint', style: 'text-align:center;',
+                    text: '💡 그림을 길게 누르면 “이미지 저장”으로도 사진 앱에 담을 수 있어요.' })
+        : null,
       el('div', { class: 'actions' }, [
         UI.btn('🔁 다시 만들기', { onClick: () => { Speech.stop(); ctx.savedId = null; startMaking(); } }),
         UI.btn('🏠 처음으로', { onClick: () => { Speech.stop(); goHome(); } })

@@ -289,6 +289,27 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .card--lilac  { border-color: var(--lilac);  background: linear-gradient(180deg, #FAF7FE, #FFFFFF); }
 .card--butter { border-color: var(--butter); background: linear-gradient(180deg, #FFFCF1, #FFFFFF); }
 
+/* 카드 위의 작은 읽어주기 단추 — 카드를 감싸고 오른쪽 위에 얹습니다. */
+.card-wrap { position: relative; display: flex; }
+.card-wrap > .card { flex: 1 1 auto; width: 100%; }
+.card__speak {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 3px solid var(--card-edge);
+  background: #FFFFFF;
+  font-size: 1.25em;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: transform .25s var(--ease), background .25s var(--ease);
+}
+.card__speak:hover  { background: var(--bg-soft); transform: scale(1.06); }
+.card__speak:active { transform: scale(.94); }
+
 /* 선택된 카드 */
 .card[aria-pressed="true"], .card.is-chosen {
   border-color: var(--mint-deep);
@@ -493,6 +514,23 @@ button, input, select, textarea { font: inherit; color: inherit; }
   border-style: solid;
   background: #FFFDF8;
 }
+
+/* 저장한 뒤 "어디에 들어갔는지" 알려 주는 칸 */
+.save-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  max-width: 640px;
+  margin: 16px auto 0;
+  padding: 16px 20px;
+  background: #F2F8FE;
+  border: 3px solid var(--sky);
+  border-radius: var(--radius-sm);
+  line-height: 1.6;
+}
+.save-note__icon { font-size: 1.5em; line-height: 1.2; }
+.save-note p { font-size: .92em; }
+.save-note p + p { margin-top: 6px; color: var(--ink-soft); font-size: .86em; }
 
 .name-chips { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
 .chip {

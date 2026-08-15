@@ -23,7 +23,10 @@ const Scanning = (() => {
   }
 
   function collect() {
-    const sel = 'button:not([aria-disabled="true"]):not([hidden]), a[href], input:not([type="hidden"]), select, textarea, summary';
+    // data-noscan 이 붙은 것(카드의 작은 🔊 단추 등)은 차례에 넣지 않습니다.
+    // 고를 것이 두 배로 늘어나면 스위치로 고르기가 훨씬 힘들어지기 때문입니다.
+    const sel = 'button:not([aria-disabled="true"]):not([hidden]):not([data-noscan]), ' +
+                'a[href], input:not([type="hidden"]), select, textarea, summary';
     return Array.from(root().querySelectorAll(sel)).filter(n => {
       if (n.disabled) return false;
       const r = n.getBoundingClientRect();
