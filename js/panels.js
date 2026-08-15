@@ -421,7 +421,11 @@ const Panels = (() => {
           }
           else { mark = '❌'; note = r.text.message || '쓸 수 없어요'; }
         } else if (r.available[k]) {
-          mark = '✅'; note = '이 키로 보입니다 (실제 한도는 무료/유료 등급에 따라 다름)';
+          const swapped = r.willUse[k] && r.willUse[k] !== CFG.MODELS[k];
+          mark = '✅';
+          note = swapped
+            ? `이 이름은 없지만 “${r.willUse[k]}” 로 대신 씁니다 (자동으로 바꿔 부릅니다)`
+            : '이 키로 보입니다 (실제 한도는 무료/유료 등급에 따라 다름)';
         } else {
           mark = '❌'; note = '이 키의 모델 목록에 없어요 — 무료 등급이거나 아직 권한이 없는 경우예요';
           if (L.feature) missing.push.apply(missing, L.feature);
@@ -594,19 +598,38 @@ const Panels = (() => {
         preview = el('div', { class: 'gal-item__kind', 'aria-hidden': 'true', text: mode.emoji });
       }
 
+      /* 저장한 뒤 어디에 들어갔는지 이 작품 칸에 바로 알려 줍니다. */
+      const note = el('p', { class: 'gal-item__date', hidden: true });
+      const names = (w.blobs || []).map((b, i) => {
+        const ext = b.type.includes('png') ? 'png' : b.type.includes('jpeg') ? 'jpg'
+                  : b.type.includes('mp4') ? 'mp4' : b.type.includes('wav') ? 'wav'
+                  : b.type.includes('mpeg') ? 'mp3' : b.type.includes('text') ? 'txt' : 'bin';
+        const base = (w.title || '작품').replace(/[\\/:*?"<>|]/g, '') || '작품';
+        return `${base}${(w.blobs.length > 1 ? '-' + (i + 1) : '')}.${ext}`;
+      });
+
       const item = el('div', { class: 'gal-item' }, [
         preview,
         el('p', { class: 'gal-item__name', text: w.title || '이름 없는 작품' }),
         el('p', { class: 'gal-item__date', text: `${mode.label} · ${w.dateText || ''}` }),
+        note,
         el('div', { class: 'gal-item__btns' }, [
-          UI.btn('저장', { kind: 'sky', ariaLabel: `${w.title} 기기에 저장하기`, onClick: () => {
-            (w.blobs || []).forEach((b, i) => {
-              const ext = b.type.includes('png') ? 'png' : b.type.includes('jpeg') ? 'jpg'
-                        : b.type.includes('mp4') ? 'mp4' : b.type.includes('wav') ? 'wav'
-                        : b.type.includes('mpeg') ? 'mp3' : 'bin';
-              UI.download(b, `${(w.title || '작품').replace(/[\\/:*?"<>|]/g, '')}${(w.blobs.length > 1 ? '-' + (i + 1) : '')}.${ext}`);
-            });
+          UI.btn('내려받기', { kind: 'sky', ariaLabel: `${w.title} 기기에 파일로 내려받기`, onClick: () => {
+            (w.blobs || []).forEach((b, i) => UI.download(b, names[i]));
+            note.hidden = false;
+            note.textContent = `📁 「${names[0]}」 로 저장했어요. ${UI.saveHint()}`;
+            UI.announce(note.textContent);
           }}),
+          UI.canShareFiles(w.blobs || [], names) ? UI.btn('보내기', {
+            kind: 'mint', ariaLabel: `${w.title} 사진 앱이나 다른 앱으로 보내기`,
+            onClick: async () => {
+              const ok = await UI.shareFiles(w.blobs || [], names, w.title || '내가 만든 작품');
+              if (!ok) return;
+              note.hidden = false;
+              note.textContent = '📤 보냈어요. “이미지 저장”을 고르면 사진 앱에 들어가요.';
+              UI.announce(note.textContent);
+            }
+          }) : null,
           UI.btn('지우기', { kind: 'danger', ariaLabel: `${w.title} 지우기`, onClick: async () => {
             if (!confirm(`"${w.title}" 작품을 지울까요?`)) return;
             await DB.remove(w.id);

@@ -91,7 +91,22 @@ const UI = (() => {
       o.onClick && o.onClick();
     });
     if (disabled) node.classList.add('is-disabled');
-    return node;
+
+    /* speak: 글자를 읽기 어려운 학생을 위해 카드 모서리에 작은 🔊 단추를 답니다.
+       단추 안에 단추를 넣을 수 없어서 카드를 감싸고 그 위에 얹습니다.
+       스캐닝(스위치) 차례에는 끼지 않도록 data-noscan 을 붙입니다. */
+    if (!o.speak || !Speech.supported) return node;
+    const sp = el('button', {
+      type: 'button', class: 'card__speak', 'data-noscan': 'true',
+      text: '🔊', title: `${o.label} 읽어주기`,
+      'aria-label': `${o.label} 읽어주기`
+    });
+    sp.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      Speech.speak(o.speak);
+    });
+    return el('div', { class: 'card-wrap' }, [node, sp]);
   }
 
   function grid(cards, cls) { return el('div', { class: 'grid' + (cls ? ' ' + cls : '') }, cards); }
@@ -185,6 +200,48 @@ const UI = (() => {
     document.body.appendChild(a);
     a.click();
     setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 4000);
+    return filename;
+  }
+
+  /* ---------- "어디에 저장됐지?" 안내 ----------
+     브라우저가 파일을 어디에 두는지는 기기마다 달라서, 저장한 뒤에
+     찾아갈 곳을 그 기기에 맞는 말로 알려 줍니다. */
+  function isIOS() {
+    const ua = navigator.userAgent || '';
+    return /iPad|iPhone|iPod/.test(ua) ||
+           (/Macintosh/.test(ua) && typeof document !== 'undefined' && 'ontouchend' in document);
+  }
+
+  function saveHint() {
+    const ua = navigator.userAgent || '';
+    if (isIOS())            return '아이패드·아이폰은 “파일” 앱 → “다운로드” 폴더에 들어 있어요.';
+    if (/Android/.test(ua)) return '안드로이드는 “내 파일(파일)” 앱 → “Download(다운로드)” 폴더에 들어 있어요.';
+    return '이 컴퓨터의 “다운로드” 폴더에 들어 있어요.';
+  }
+
+  /* 사진첩·다른 앱으로 바로 보내기 (태블릿에서 다운로드 폴더를 찾기 어려울 때 편합니다) */
+  function makeFiles(blobs, names) {
+    if (typeof File === 'undefined') return null;
+    try { return blobs.map((b, i) => new File([b], names[i], { type: b.type || 'application/octet-stream' })); }
+    catch (_) { return null; }
+  }
+
+  function canShareFiles(blobs, names) {
+    if (!navigator.share || !navigator.canShare) return false;
+    const files = makeFiles(blobs, names);
+    if (!files) return false;
+    try { return navigator.canShare({ files }); } catch (_) { return false; }
+  }
+
+  async function shareFiles(blobs, names, title) {
+    const files = makeFiles(blobs, names);
+    if (!files) return false;
+    try {
+      await navigator.share({ files, title: title || '내가 만든 작품' });
+      return true;
+    } catch (_) {
+      return false;      // 학생이 취소했거나 이 기기가 지원하지 않는 경우
+    }
   }
 
   function todayText() {
@@ -197,6 +254,7 @@ const UI = (() => {
     title, card, grid, notice, btn,
     openOverlay, closeOverlay, anyOverlayOpen,
     fileToAttachment, blobToDataUrl, download, todayText,
+    saveHint, canShareFiles, shareFiles, isIOS,
     screenEl
   };
 })();

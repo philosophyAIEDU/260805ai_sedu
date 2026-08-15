@@ -23,15 +23,20 @@ const Speech = (() => {
            voices.find(v => /Korean|한국/i.test(v.name)) || null;
   }
 
+  /* 이어 읽기(speakList)가 돌고 있으면 함께 멈추도록 표시해 둡니다. */
+  let seqStop = false;
+
   function stop() {
+    seqStop = true;
     if (supported) { try { window.speechSynthesis.cancel(); } catch (_) {} }
   }
 
-  /* rate: 0.5 ~ 1.5 (선생님용 설정의 "음성 읽어주기 속도") */
+  /* rate: 0.5 ~ 1.5 (선생님용 설정의 "음성 읽어주기 속도")
+     keep: true 이면 앞의 말을 끊지 않습니다(여러 낱말을 이어 읽을 때). */
   function speak(text, opts) {
     if (!supported || !text) return false;
     const o = opts || {};
-    stop();
+    if (!o.keep) stop();
     const u = new SpeechSynthesisUtterance(String(text));
     u.lang = 'ko-KR';
     const v = koVoice();
@@ -45,7 +50,32 @@ const Speech = (() => {
     return true;
   }
 
+  /* 여러 낱말을 하나씩 차례로 읽어 줍니다.
+     (주제·선택지 카드를 "우주 … 바다 … 산 … 하늘" 처럼 순서대로 들려줄 때 씁니다.)
+     낱말 사이에 잠깐 쉬어야 어떤 낱말인지 알아듣기 쉬워서 조금씩 쉬어 갑니다. */
+  function speakList(list, opts) {
+    const arr = (list || []).map(s => String(s || '').trim()).filter(Boolean);
+    if (!supported || !arr.length) return false;
+    const gap = (opts && opts.gap != null) ? opts.gap : 450;
+    stop();
+    seqStop = false;
+    let i = 0;
+    const next = () => {
+      if (seqStop || i >= arr.length) return;
+      const text = arr[i++];
+      const ok = speak(text, {
+        keep: true,
+        rate: opts && opts.rate,
+        onend: () => setTimeout(next, gap)
+      });
+      if (!ok) seqStop = true;
+    };
+    // 앞선 말을 취소한 직후에 바로 말하면 일부 브라우저에서 소리가 나지 않아 살짝 미룹니다.
+    setTimeout(next, 120);
+    return true;
+  }
+
   function isSpeaking() { return supported && window.speechSynthesis.speaking; }
 
-  return { supported, speak, stop, isSpeaking };
+  return { supported, speak, speakList, stop, isSpeaking };
 })();

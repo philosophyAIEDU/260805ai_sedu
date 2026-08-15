@@ -2,7 +2,7 @@
    api.js — Gemini API 호출 모음
    · 텍스트/선택지/이야기/이름 제안/그림 설명 : gemini-3.1-flash-lite
    · 그림 만들기·바꾸기                      : gemini-3.1-flash-lite-image
-   · 노래                                    : lyria-3-clip-preview
+   · 노래                                    : lyria-3-clip-preview (generateContent)
    · 영상                                    : veo-3.1-lite-generate-preview
    · 음성 읽어주기는 API를 쓰지 않습니다(브라우저 speechSynthesis, speech.js).
    API 키는 코드에 넣지 않고 선생님용 설정에서 입력한 값을 브라우저에서만 읽어 씁니다.
@@ -90,7 +90,65 @@ const API = (() => {
     const h = holdOff['*'] || holdOff[model];
     return (h && (Date.now() - h.at) < HOLD_OFF_MS) ? h : null;
   }
-  function isDayLimited(model) { return !!heldOff(model); }
+  function isDayLimited(model) { return !!heldOff(aliasOf(model)); }
+
+  /* =========================================================
+     모델을 못 찾았을 때(404) 대신 쓸 모델 찾기
+     계정·지역에 따라 쓸 수 있는 모델 이름이 달라서, 설정에 적힌 이름이 없으면
+     이 키로 실제 쓸 수 있는 같은 종류의 모델로 자동으로 바꿔 씁니다.
+     (모델 목록 조회는 생성 요청이 아니라 비용이 들지 않습니다.)
+     ========================================================= */
+  const MODELS_CACHE_MS = 10 * 60 * 1000;
+  let modelsCache = null;                 // { at, names }
+  const modelAlias = {};                  // 설정에 적힌 이름 → 이 키에서 실제로 쓰는 이름
+
+  function aliasOf(model) { return modelAlias[model] || model; }
+  function getAliases() { return Object.assign({}, modelAlias); }
+
+  async function availableModels() {
+    if (modelsCache && (Date.now() - modelsCache.at) < MODELS_CACHE_MS) return modelsCache.names;
+    const names = await listModels();
+    modelsCache = { at: Date.now(), names };
+    return names;
+  }
+
+  function roleOf(model) {
+    return Object.keys(CFG.MODELS).find(k => CFG.MODELS[k] === model) || null;
+  }
+
+  /* 같은 종류로 볼 수 있는 모델인지 — 앞부분(계열)이 같고, 쓰임새가 맞아야 합니다.
+     (글자 모델 자리에 그림 모델이 들어가는 일이 없도록 걸러 냅니다.) */
+  function sameKind(role, name, model) {
+    const family = String(model).split('-')[0];        // gemini / lyria / veo …
+    if (name.indexOf(family) !== 0) return false;
+    if (role === 'image') return /image/.test(name);
+    if (role === 'text')  return !/(image|embedding|aqa|tts|audio|live|video)/.test(name);
+    return true;
+  }
+
+  /* 앞에서부터 몇 글자가 같은지 — 원래 쓰려던 이름과 가장 비슷한 것을 먼저 고릅니다. */
+  function commonPrefixLen(a, b) {
+    let i = 0;
+    while (i < a.length && i < b.length && a[i] === b[i]) i++;
+    return i;
+  }
+
+  async function findAlternative(model) {
+    const role = roleOf(model);
+    let names;
+    try { names = await availableModels(); } catch (_) { return { pick: null, candidates: [] }; }
+
+    // 1) 설정에 적어 둔 대체 목록(CFG.MODEL_FALLBACKS)을 위에서부터
+    const listed = ((CFG.MODEL_FALLBACKS || {})[role] || []).filter(n => n !== model && names.indexOf(n) !== -1);
+
+    // 2) 목록에 없으면 이 키로 쓸 수 있는 같은 종류의 모델 중 이름이 가장 비슷한 것
+    const kin = names
+      .filter(n => n !== model && sameKind(role, n, model))
+      .sort((a, b) => commonPrefixLen(b, model) - commonPrefixLen(a, model));
+
+    const candidates = listed.concat(kin.filter(n => listed.indexOf(n) === -1));
+    return { pick: candidates[0] || null, candidates: candidates.slice(0, 8) };
+  }
 
   /* 사용량 초과(429)·일시적 오류(500·503)는 잠깐 기다렸다 스스로 다시 시도합니다.
      다만 이보다 오래 기다려야 한다면 학생을 기다리게 하지 않고 바로 알려 줍니다. */
@@ -135,12 +193,15 @@ const API = (() => {
     if (!hasKey()) throw new ApiError('API 키가 아직 없어요. 선생님용 설정에서 넣어 주세요.', 'nokey');
     const maxRetries = (opts && opts.retries != null) ? opts.retries : RETRY_WAITS.length;
 
+    // 앞서 이 모델 이름이 없어서 다른 이름으로 바꿔 쓰기로 했다면 그 이름으로 보냅니다.
+    let active = aliasOf(model);
+
     // 방금 한도에 걸린 대상이면 헛되이 기다리지 않고 바로 알려 줍니다.
     // (결제·한도를 새로 손본 뒤 확인할 때처럼 꼭 보내야 하면 force로 건너뜁니다.)
-    const held = !(opts && opts.force) && heldOff(model);
+    const held = !(opts && opts.force) && heldOff(active);
     if (held) {
       const cap = held.kind === 'quota-cap';
-      lastError = { status: 429, model, method,
+      lastError = { status: 429, model: active, method,
                     message: cap ? '지출 한도를 넘겨서 요청을 보내지 않았어요.' : '하루 사용량을 다 써서 요청을 보내지 않았어요.',
                     spendCap: cap,
                     quota: { perDay: !cap, perMinute: false, freeTier: false, items: [] } };
@@ -148,12 +209,14 @@ const API = (() => {
     }
 
     let dropped = 0;               // 모델이 받지 않아 빼 버린 항목 수
+    let switched = false;          // 404 때문에 다른 모델 이름으로 바꿔 봤는지
+    let switchInfo = null;         // 바꿔 쓴 사정 (선생님용 안내에 그대로 보여 줍니다)
     for (let attempt = 0; ; attempt++) {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), timeoutMs || 60000);
       let res;
       try {
-        res = await fetch(`${CFG.API_BASE}/models/${model}:${method}`, {
+        res = await fetch(`${CFG.API_BASE}/models/${active}:${method}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key() },
           body: JSON.stringify(body),
@@ -161,19 +224,20 @@ const API = (() => {
         });
       } catch (e) {
         clearTimeout(timer);
-        lastError = { status: 0, message: String((e && e.message) || e), model, method };
+        lastError = { status: 0, message: String((e && e.message) || e), model: active, method };
         throw new ApiError('인터넷 연결을 확인해 주세요.', 'network');
       }
       clearTimeout(timer);
 
-      if (res.ok) { delete holdOff[model]; delete holdOff['*']; return res.json(); }
+      if (res.ok) { delete holdOff[active]; delete holdOff['*']; return res.json(); }
 
       let json = null, detail = '';
       try { json = await res.json(); detail = (json.error && json.error.message) || ''; } catch (_) {}
       const quota = res.status === 429 ? quotaInfoOf(json) : null;
       const spendCap = res.status === 429 && isSpendCap(json, detail);
       const asked = retryDelaySec(json);
-      lastError = { status: res.status, message: detail || `HTTP ${res.status}`, model, method, quota, spendCap, retryAfter: asked };
+      lastError = { status: res.status, message: detail || `HTTP ${res.status}`, model: active, method, quota, spendCap, retryAfter: asked };
+      if (switchInfo) Object.assign(lastError, switchInfo);   // 모델 이름을 바꿔 쓴 사정도 함께 남깁니다
 
       // 지출 한도를 넘긴 경우 — 선생님이 한도를 올려야 하므로 기다리지 않습니다.
       // 프로젝트 전체에 걸리므로 다른 모델도 함께 쉬게 합니다.
@@ -184,8 +248,25 @@ const API = (() => {
 
       // 하루 한도를 다 쓴 경우 — 기다려도 오늘은 풀리지 않으므로 바로 알려 줍니다.
       if (res.status === 429 && quota && quota.perDay) {
-        holdOff[model] = { at: Date.now(), kind: 'quota-day' };
+        holdOff[active] = { at: Date.now(), kind: 'quota-day' };
         throw new ApiError(DAY_LIMIT_MSG, 'quota-day');
+      }
+
+      // 모델 이름을 못 찾은 경우(404) — 이 키로 쓸 수 있는 같은 종류의 모델로 한 번 바꿔 봅니다.
+      // (모델 이름은 계정·지역·시기에 따라 다르기 때문입니다.)
+      if (res.status === 404 && !switched) {
+        switched = true;
+        // 모델 목록을 받아 오는 동안 lastError 가 바뀔 수 있으니, 이 404의 기록을 붙잡아 둡니다.
+        const notFound = lastError;
+        const alt = await findAlternative(active);
+        switchInfo = { tried: active, available: alt.candidates, usedInstead: alt.pick || null };
+        lastError = Object.assign(notFound, switchInfo);
+        if (alt.pick) {
+          modelAlias[model] = alt.pick;
+          active = alt.pick;
+          attempt--;               // 이름을 바꿔 다시 보내는 것은 재시도 횟수로 세지 않습니다.
+          continue;
+        }
       }
 
       // "이 항목은 이 모델에서 지원하지 않는다"고 알려 주면 그 항목만 빼고 곧바로 다시 보냅니다.
@@ -243,11 +324,24 @@ const API = (() => {
   }
 
   async function checkKey() {
-    const out = { models: [], available: {}, text: { ok: false, message: '' } };
+    const out = { models: [], available: {}, willUse: {}, text: { ok: false, message: '' } };
     out.models = await listModels();
+    modelsCache = { at: Date.now(), names: out.models };   // 방금 받아 온 목록을 그대로 씁니다
 
     const has = name => out.models.some(m => m === name || m.indexOf(name) === 0);
-    Object.keys(CFG.MODELS).forEach(k => { out.available[k] = has(CFG.MODELS[k]); });
+    Object.keys(CFG.MODELS).forEach(k => {
+      const wanted = CFG.MODELS[k];
+      if (has(wanted)) { out.available[k] = true; out.willUse[k] = wanted; return; }
+      // 설정에 적힌 이름이 없으면, 실제로 쓸 수 있는 같은 종류의 모델을 찾아 둡니다.
+      const listed = ((CFG.MODEL_FALLBACKS || {})[k] || []).filter(n => n !== wanted && out.models.indexOf(n) !== -1);
+      const kin = out.models
+        .filter(n => n !== wanted && sameKind(k, n, wanted))
+        .sort((a, b) => commonPrefixLen(b, wanted) - commonPrefixLen(a, wanted));
+      const pick = listed[0] || kin[0] || null;
+      out.available[k] = !!pick;
+      out.willUse[k] = pick;
+      if (pick) modelAlias[wanted] = pick;
+    });
 
     // 글자 모델은 짧은 호출로 실제 한도까지 확인 (재시도 없이 한 번만)
     // 결제를 새로 연결한 뒤 바로 확인할 수 있도록, 한도 기억은 무시하고 실제로 보내 봅니다.
@@ -292,12 +386,67 @@ const API = (() => {
     return null;
   }
 
-  function b64ToBlob(b64, mime) {
+  function b64ToBytes(b64) {
     const bin = atob(b64);
     const len = bin.length;
     const buf = new Uint8Array(len);
     for (let i = 0; i < len; i++) buf[i] = bin.charCodeAt(i);
-    return new Blob([buf], { type: mime || 'application/octet-stream' });
+    return buf;
+  }
+
+  function b64ToBlob(b64, mime) {
+    return new Blob([b64ToBytes(b64)], { type: mime || 'application/octet-stream' });
+  }
+
+  /* 응답에서 소리 조각 찾기 (노래 모델은 inlineData로 오디오를 돌려줍니다) */
+  function inlineAudioOf(json) {
+    const cands = (json && json.candidates) || [];
+    for (const c of cands) {
+      const parts = (c.content && c.content.parts) || [];
+      for (const p of parts) {
+        const d = p.inlineData || p.inline_data;
+        const mime = d && (d.mimeType || d.mime_type || '');
+        if (d && d.data && /^audio\//i.test(mime)) return { data: d.data, mimeType: mime };
+      }
+    }
+    return null;
+  }
+
+  /* 다듬지 않은 소리(PCM)를 브라우저가 바로 재생할 수 있는 WAV로 감쌉니다.
+     모델에 따라 audio/L16;codec=pcm;rate=48000 처럼 껍데기 없는 소리를 주기도 하는데,
+     그대로는 <audio> 로 들을 수도, 저장해서 열 수도 없기 때문입니다. */
+  function pcmToWav(bytes, rate, channels, bits) {
+    const sampleRate = rate || 24000, ch = channels || 1, bitsPer = bits || 16;
+    const blockAlign = ch * bitsPer / 8;
+    const buf = new ArrayBuffer(44 + bytes.length);
+    const view = new DataView(buf);
+    const ascii = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+    ascii(0, 'RIFF');
+    view.setUint32(4, 36 + bytes.length, true);
+    ascii(8, 'WAVE');
+    ascii(12, 'fmt ');
+    view.setUint32(16, 16, true);              // fmt 조각 길이
+    view.setUint16(20, 1, true);               // 1 = PCM
+    view.setUint16(22, ch, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * blockAlign, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, bitsPer, true);
+    ascii(36, 'data');
+    view.setUint32(40, bytes.length, true);
+    new Uint8Array(buf, 44).set(bytes);
+    return new Blob([buf], { type: 'audio/wav' });
+  }
+
+  /* 받아 온 소리를 재생·저장할 수 있는 형태로 만듭니다. */
+  function audioBlobOf(b64, mime) {
+    const m = String(mime || '').toLowerCase();
+    if (/l16|pcm/.test(m)) {
+      const rate = Number((m.match(/rate=(\d+)/) || [])[1]) || 24000;
+      const ch   = Number((m.match(/channels=(\d+)/) || [])[1]) || 1;
+      return pcmToWav(b64ToBytes(b64), rate, ch, 16);
+    }
+    return b64ToBlob(b64, mime || 'audio/wav');
   }
 
   /* ---------- 짧은 텍스트 요청 ---------- */
@@ -477,6 +626,9 @@ ${ctx.heroName ? '주인공 이름: ' + ctx.heroName : ''}
 
   /* =========================================================
      7) 노래 만들기 (lyria-3-clip-preview)
+     이 노래 모델은 generateContent 로 부르고, 소리는 inlineData 로 돌아옵니다.
+     (predict 로 부르면 "predict 는 지원하지 않는다"는 뜻의 404가 납니다.)
+     예전 방식(predict)만 되는 모델로 바뀔 때를 대비해 그쪽도 한 번 더 시도합니다.
      ========================================================= */
   async function generateMusic(ctx) {
     const bits = [];
@@ -495,7 +647,21 @@ ${ctx.heroName ? '주인공 이름: ' + ctx.heroName : ''}
       prompt = (t || '').replace(/\s+/g, ' ').trim();
     } catch (_) { prompt = ''; }
     if (prompt.length < 8) prompt = `A gentle instrumental piece: ${bits.join(', ')}`;
-    prompt += ' Warm, cheerful, calm instrumental music suitable for young children. No lyrics, no vocals.';
+    prompt += ' Warm, cheerful, calm instrumental music suitable for young children. ' +
+              'No lyrics, no vocals. Avoid harsh, loud, scary, distorted or sad sounds.';
+
+    try {
+      const json = await callModel(CFG.MODELS.music, 'generateContent', {
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: { responseModalities: ['AUDIO', 'TEXT'] }
+      }, 200000);
+      const audio = inlineAudioOf(json);
+      if (audio) return audioBlobOf(audio.data, audio.mimeType);
+      throw new ApiError('노래를 만들지 못했어요. 다시 해 볼까요?', 'empty');
+    } catch (e) {
+      // 모델을 못 찾은 경우에만 예전 방식(predict)으로 한 번 더 해 봅니다.
+      if (!e || e.kind !== 'model') throw e;
+    }
 
     const json = await callModel(CFG.MODELS.music, 'predict', {
       instances: [{ prompt, negative_prompt: 'harsh, loud, scary, distorted, sad' }],
@@ -506,7 +672,7 @@ ${ctx.heroName ? '주인공 이름: ' + ctx.heroName : ''}
     const b64 = pred && (pred.bytesBase64Encoded || pred.audioContent || pred.audio || pred.data);
     if (!b64) throw new ApiError('노래를 만들지 못했어요. 다시 해 볼까요?', 'empty');
     const mime = (pred && (pred.mimeType || pred.mime_type)) || 'audio/wav';
-    return b64ToBlob(b64, mime);
+    return audioBlobOf(b64, mime);
   }
 
   /* =========================================================
@@ -580,6 +746,7 @@ JSON 배열만 출력: [{"text":"...","image":"..."}, ...]`;
 
   return {
     hasKey, ApiError, askText, getLastError, setStatusHandler, checkKey, listModels, isDayLimited,
+    getAliases,
     makeChoices, makeStory, suggestTitles, describeDrawing,
     refinePrompt, localPrompt, describePicks,
     generateImage, editImage, generateMusic, generateVideo,

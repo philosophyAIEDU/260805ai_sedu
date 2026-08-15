@@ -14,6 +14,18 @@ const CFG = {
     // 음성 읽어주기는 API를 쓰지 않고 브라우저 speechSynthesis 사용
   },
 
+  /* ---------- 모델을 못 찾았을 때(404) 대신 써 볼 이름 ----------
+     계정·지역에 따라 쓸 수 있는 모델이 다릅니다. 위 MODELS 의 이름이 404가 나면
+     이 목록을 위에서부터 살펴보고, 이 키로 실제 쓸 수 있는 것으로 자동으로 바꿔 씁니다.
+     (모델 목록 조회는 생성 요청이 아니라서 비용이 들지 않습니다.) */
+  MODEL_FALLBACKS: {
+    text:  ['gemini-3.1-flash-lite', 'gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash'],
+    image: ['gemini-3.1-flash-lite-image', 'gemini-3-pro-image-preview', 'gemini-2.5-flash-image'],
+    music: ['lyria-3-clip-preview', 'lyria-3-pro-preview', 'lyria-002'],
+    video: ['veo-3.1-lite-generate-preview', 'veo-3.1-generate-preview',
+            'veo-3.0-fast-generate-001', 'veo-3.0-generate-001', 'veo-2.0-generate-001']
+  },
+
   DEFAULT_SETTINGS: {
     apiKey: '',
     videoDailyLimit: 3,      // 0~10 (0이면 영상 기능 잠김)
@@ -124,14 +136,14 @@ const CFG = {
 
   /* ---------- 화면별 도움말 ---------- */
   HELP: {
-    home:        '만들고 싶은 것을 골라요. 카드마다 무엇을 만드는지 한 줄로 적혀 있어요.',
-    topic:       '이야기가 펼쳐질 곳을 골라요. 우주, 바다, 산, 하늘 중 하나를 누르면 돼요.',
-    question:    '질문을 읽고 마음에 드는 카드를 하나 눌러요. 틀린 답은 없어요.',
+    home:        '만들고 싶은 것을 골라요. 카드 오른쪽 위 🔊 를 누르면 무엇인지 읽어 줘요.',
+    topic:       '이야기가 펼쳐질 곳을 골라요. 카드의 🔊 를 누르면 “우주”, “바다” 같은 낱말을 읽어 주고, 아래 “하나씩 읽어주기”를 누르면 차례로 읽어 줘요.',
+    question:    '질문을 읽고 마음에 드는 카드를 하나 눌러요. 🔊 를 누르면 읽어 줘요. 틀린 답은 없어요.',
     attach:      '내가 그린 그림을 사진으로 찍거나 파일로 올려요. 안 올려도 괜찮아요.',
     attachEdit:  '바꾸고 싶은 내 그림을 올려 주세요. 이 기능은 그림이 꼭 필요해요.',
     name:        '주인공 이름을 지어 줄 수 있어요. 안 써도 괜찮아요.',
     confirm:     '고른 것들을 확인해요. 바꾸고 싶은 줄을 누르면 그것만 다시 고를 수 있어요.',
     making:      '작품을 만드는 중이에요. 조금만 기다려 주세요.',
-    result:      '작품이 완성됐어요. 이름을 붙이고, 이야기를 듣고, 저장할 수 있어요.'
+    result:      '작품이 완성됐어요. “기기에 내려받기”를 누르면 어디에 저장됐는지 화면에 알려 줘요. “보관함에 담기”를 누르면 이 앱 안에 모아 둘 수 있어요.'
   }
 };
