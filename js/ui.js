@@ -241,19 +241,22 @@ const UI = (() => {
           c.drawImage(img, 0, 0, w, h);
 
           if (clean) {
-            const padX = Math.round(w * 0.04);
-            // 글자가 많으면 자막이 그림을 너무 가리지 않도록 조금씩 줄여 봅니다.
-            let size = Math.max(14, Math.round(w * 0.052));
+            const padX = Math.round(w * 0.03);
+            /* “🔍 장면 크게 보기” 화면에서 보이는 자막과 비슷한 비율로 새깁니다.
+               (그 화면에서 자막은 그림 너비의 3% 안팎이고, 한 줄일 때 띠 높이는 7~9%입니다.
+                그림을 거의 가리지 않으면서 멀리서도 읽히는 크기입니다.) */
+            let size = Math.max(13, Math.round(w * 0.027));
             let lines, lineH;
             for (let i = 0; ; i++) {
               c.font = `800 ${size}px ${CAP_FONT}`;
               lines = wrapLines(c, clean, w - padX * 2);
-              lineH = Math.round(size * 1.35);
-              if (lines.length * lineH <= h * 0.38 || size <= 14 || i >= 5) break;
-              size = Math.max(14, Math.round(size * 0.85));
+              lineH = Math.round(size * 1.45);
+              // 글이 아주 길 때만 자막이 그림을 너무 가리지 않도록 조금씩 줄입니다.
+              if (lines.length * lineH <= h * 0.3 || size <= 13 || i >= 5) break;
+              size = Math.max(13, Math.round(size * 0.88));
             }
 
-            const padY = Math.round(size * 0.55);
+            const padY = Math.round(size * 0.59);
             const bandH = Math.min(h, lines.length * lineH + padY * 2);
             const top = h - bandH;
 
