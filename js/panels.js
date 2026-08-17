@@ -560,6 +560,88 @@ const Panels = (() => {
 
   document.getElementById('set-close').addEventListener('click', () => UI.closeOverlay('settings'));
 
+  /* ================= 장면 크게 보기 =================
+     그림책의 장면을 누르면 큰 그림과 자막으로 한 컷씩 볼 수 있습니다.
+     (한 장면에 집중하기 어려운 학생을 위해 한 번에 한 컷만 보여 줍니다.) */
+  const viewerBody = document.getElementById('viewer-body');
+  const viewerFoot = document.getElementById('viewer-actions');
+  let vScenes = [];
+  let vIndex = 0;
+
+  function drawViewer() {
+    const s = vScenes[vIndex] || {};
+    const total = vScenes.length;
+
+    viewerBody.innerHTML = '';
+    viewerBody.appendChild(el('div', { class: 'viewer__stage' }, [
+      el('span', { class: 'scene-frame' }, [
+        el('img', { src: s.url, alt: `${vIndex + 1}번째 장면` }),
+        total > 1 ? el('span', { class: 'scene-no', 'aria-hidden': 'true', text: String(vIndex + 1) }) : null,
+        s.text ? el('span', { class: 'scene-cap', text: s.text }) : null
+      ])
+    ]));
+    if (total > 1) viewerBody.appendChild(el('p', { class: 'viewer__count', text: `${vIndex + 1} / ${total} 장` }));
+
+    viewerFoot.innerHTML = '';
+    if (total > 1) {
+      viewerFoot.appendChild(UI.btn('◀ 앞 장면', {
+        kind: 'sky', ariaLabel: '앞 장면 보기', onClick: () => stepScene(-1)
+      }));
+      viewerFoot.appendChild(UI.btn('다음 장면 ▶', {
+        kind: 'sky', ariaLabel: '다음 장면 보기', onClick: () => stepScene(1)
+      }));
+    }
+    if (Speech.supported && s.text) {
+      viewerFoot.appendChild(UI.btn('🔊 읽어주기', { kind: 'mint', onClick: () => Speech.speak(s.text) }));
+    }
+    viewerFoot.appendChild(UI.btn('닫기', { kind: 'primary', onClick: closeViewer }));
+
+    // 첫째·마지막 장면에서는 넘길 수 없다는 것을 눈과 스크린리더 모두에 알려 줍니다.
+    const btns = viewerFoot.querySelectorAll('button');
+    if (total > 1) {
+      btns[0].disabled = vIndex === 0;
+      btns[1].disabled = vIndex === total - 1;
+    }
+    UI.announce(`${vIndex + 1}번째 장면. ${s.text || ''}`);
+    if (window.Scanning) Scanning.refresh();
+  }
+
+  /* 앞·다음 장면으로 넘기기 — 화면을 다시 그리면 방금 누른 단추가 사라지므로
+     같은 자리에 포커스를 돌려 주어 계속 눌러 넘길 수 있게 합니다. */
+  function stepScene(delta) {
+    const next = vIndex + delta;
+    if (next < 0 || next >= vScenes.length) return;
+    Speech.stop();
+    vIndex = next;
+    drawViewer();
+    const btns = viewerFoot.querySelectorAll('button');
+    const want = delta < 0 ? btns[0] : btns[1];
+    const other = delta < 0 ? btns[1] : btns[0];
+    const target = (want && !want.disabled) ? want : other;
+    if (target && target.focus) target.focus();
+  }
+
+  function openSceneViewer(scenes, index) {
+    vScenes = (scenes || []).filter(s => s && s.url);
+    if (!vScenes.length) return;
+    vIndex = Math.max(0, Math.min(vScenes.length - 1, index || 0));
+    drawViewer();
+    UI.openOverlay('viewer');
+  }
+
+  function closeViewer() {
+    Speech.stop();
+    UI.closeOverlay('viewer');
+  }
+
+  /* 큰 화면에서는 좌우 화살표로도 넘길 수 있게 합니다.
+     (화면을 다시 그리면 포커스가 옮겨 다녀서 창이 아니라 문서에서 듣습니다.) */
+  document.addEventListener('keydown', e => {
+    if (document.getElementById('viewer').hidden) return;
+    if (e.key === 'ArrowLeft')  { e.preventDefault(); stepScene(-1); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); stepScene(1); }
+  });
+
   /* ================= 작품 보관함 ================= */
   const galBody = document.getElementById('gallery-body');
   let objectUrls = [];
@@ -650,5 +732,5 @@ const Panels = (() => {
 
   document.getElementById('gal-close').addEventListener('click', () => { releaseUrls(); UI.closeOverlay('gallery'); });
 
-  return { openOnboarding, openHelp, setHelp, openSettings, openApiKeySetup, openGallery };
+  return { openOnboarding, openHelp, setHelp, openSettings, openApiKeySetup, openGallery, openSceneViewer };
 })();
