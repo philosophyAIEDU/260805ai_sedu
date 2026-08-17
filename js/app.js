@@ -1,6 +1,8 @@
 /* =========================================================
    app.js — 화면 흐름
    홈 → 주제 → 질문들 → 개인화(그림 첨부/이름) → 확인 → 만드는 중 → 결과
+   (그림책은 확인 뒤에 "첫 장면 → 다음 줄거리 고르기 → 다음 장면" 을
+    학생이 원하는 만큼 이어 만들고, 마지막에 결과 화면으로 갑니다.)
    ========================================================= */
 
 const App = (() => {
@@ -23,7 +25,14 @@ const App = (() => {
       choices: {},        // 질문마다 만들어 둔 선택지 (뒤로 가도 그대로)
       attachment: null,
       heroName: '',
-      pageCount: 3,
+
+      /* --- 그림책 (학생이 한 장씩 이어 만듭니다) --- */
+      firstFromDrawing: false,   // 올린 그림을 첫 장면 그림으로 그대로 쓸지
+      firstPicked: false,        // 첫 장면을 만드는 방법을 한 번이라도 골랐는지
+      character: '',             // 주인공 생김새(영어) — 다음 장면에서도 같은 주인공을 그리려고 씁니다
+      pages: [],                 // [{ text, blob, url, choice }]
+      nextChoices: null,         // 지금 화면에 보여 줄 "다음 줄거리" 카드
+
       story: '',
       title: '',
       result: null,
@@ -40,8 +49,12 @@ const App = (() => {
       steps.push({ kind: 'topic', label: '주제 고르기' });
       const qs = mode === 'song' ? CFG.QUESTIONS.song : CFG.QUESTIONS.make;
       qs.forEach(q => steps.push({ kind: 'question', spec: q, label: shortLabel(q) }));
-      if (mode === 'book') steps.push({ kind: 'pages', label: '몇 장으로 만들까요' });
-      if (mode === 'song' || mode === 'story') steps.push({ kind: 'name', label: '주인공 이름 짓기' });
+      if (mode === 'book') {
+        // 그림책은 주인공 이름을 먼저 지어 두면 뒷장까지 같은 주인공으로 이어집니다.
+        steps.push({ kind: 'name', label: '주인공 이름 짓기' });
+        steps.push({ kind: 'first', label: '첫 장면 정하기' });
+      }
+      else if (mode === 'song' || mode === 'story') steps.push({ kind: 'name', label: '주인공 이름 짓기' });
       else steps.push({ kind: 'attach', label: '내 그림 넣기' });
     }
     steps.push({ kind: 'confirm', label: '확인하기' });
@@ -56,6 +69,7 @@ const App = (() => {
   /* ================= 홈 ================= */
   function goHome() {
     Speech.stop();
+    releaseBookUrls();
     ctx = null;
     Panels.setHelp('home');
     UI.setBack(null);
@@ -158,6 +172,7 @@ const App = (() => {
   }
 
   function start(mode) {
+    releaseBookUrls();
     ctx = newCtx(mode);
     flow = buildFlow(mode);
     pos = 0;
@@ -180,7 +195,7 @@ const App = (() => {
 
     if (step.kind === 'topic')    return screenTopic();
     if (step.kind === 'question') return screenQuestion(step.spec);
-    if (step.kind === 'pages')    return screenPages();
+    if (step.kind === 'first')    return screenFirst();
     if (step.kind === 'attach')   return screenAttach();
     if (step.kind === 'name')     return screenName();
     if (step.kind === 'confirm')  return screenConfirm();
@@ -253,17 +268,21 @@ const App = (() => {
     }
   }
 
-  function fallbackFor(spec, count) {
-    const key = (ctx.mode === 'song' && spec.id === 'mood') ? 'songmood' : spec.id;
-    const table = CFG.FALLBACK[key] || {};
-    const topicId = ctx.topic ? ctx.topic.id : '_any';
-    const pool = (table[topicId] || table._any || []).slice();
-    // 매번 조금 다르게 보이도록 순서를 섞습니다.
+  /* 매번 조금 다르게 보이도록 순서를 섞습니다. */
+  function shuffled(list) {
+    const pool = (list || []).slice();
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
-    return pool.slice(0, count);
+    return pool;
+  }
+
+  function fallbackFor(spec, count) {
+    const key = (ctx.mode === 'song' && spec.id === 'mood') ? 'songmood' : spec.id;
+    const table = CFG.FALLBACK[key] || {};
+    const topicId = ctx.topic ? ctx.topic.id : '_any';
+    return shuffled(table[topicId] || table._any || []).slice(0, count);
   }
 
   function renderQuestion(spec, choices, ready) {
@@ -302,20 +321,104 @@ const App = (() => {
     ]);
   }
 
-  /* ================= 3) 그림책 장수 ================= */
-  function screenPages() {
-    Panels.setHelp('question');
-    UI.render([
-      UI.title('그림책을 몇 장으로 만들까요?', '장수가 많으면 조금 더 오래 걸려요.'),
-      UI.grid([
-        UI.card({ emoji: '📗', label: '3장', desc: '짧고 빠르게 만들어요', theme: 'mint',
-          speak: '세 장. 짧고 빠르게 만들어요',
-          chosen: ctx.pageCount === 3, onClick: () => { Speech.stop(); ctx.pageCount = 3; advance(); } }),
-        UI.card({ emoji: '📘', label: '4장', desc: '조금 더 긴 이야기예요', theme: 'sky',
-          speak: '네 장. 조금 더 긴 이야기예요',
-          chosen: ctx.pageCount === 4, onClick: () => { Speech.stop(); ctx.pageCount = 4; advance(); } })
-      ])
-    ]);
+  /* ================= 3) 그림책 첫 장면 =================
+     그림책은 학생이 첫 장면부터 스스로 정합니다.
+     ① 내가 그린 그림을 그대로 1장으로 쓰기
+     ② 내가 그린 그림을 보고 AI가 첫 장면을 그리기
+     ③ 그림 없이, 고른 것으로 AI가 첫 장면을 그리기
+     여기서 정한 주인공이 마지막 장까지 그대로 이어집니다. */
+  function screenFirst() {
+    Panels.setHelp('first');
+    Speech.stop();
+
+    const fileInput = el('input', {
+      type: 'file', accept: 'image/*', style: 'display:none', 'aria-label': '그림 파일 고르기'
+    });
+    const cameraInput = el('input', {
+      type: 'file', accept: 'image/*', capture: 'environment', style: 'display:none', 'aria-label': '그림 사진 찍기'
+    });
+
+    const msgBox = el('div', {});
+
+    async function handleFile(input) {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      try {
+        ctx.attachment = await UI.fileToAttachment(file);
+        ctx.firstFromDrawing = true;      // 올렸으면 우선 "내 그림 그대로"를 골라 둡니다
+        UI.announce('첫 장면 그림을 올렸어요.');
+        msgBox.innerHTML = '';
+      } catch (e) {
+        msgBox.innerHTML = '';
+        msgBox.appendChild(UI.notice(e.message || '그림을 읽지 못했어요. 다른 그림으로 해 볼까요?', null, '🙂'));
+      }
+      input.value = '';
+      renderAll();
+    }
+
+    fileInput.addEventListener('change', () => handleFile(fileInput));
+    cameraInput.addEventListener('change', () => handleFile(cameraInput));
+
+    function pickWay(fromDrawing) {
+      Speech.stop();
+      ctx.firstFromDrawing = !!fromDrawing;
+      ctx.firstPicked = true;
+      advance();
+    }
+
+    function renderAll() {
+      const has = !!ctx.attachment;
+
+      const preview = el('div', { class: 'attach-box' }, has ? [
+        el('img', { class: 'attach-preview', src: ctx.attachment.dataUrl, alt: '내가 올린 첫 장면 그림' }),
+        el('p', { text: '이 그림에서 이야기가 시작돼요.' }),
+        el('div', { class: 'actions', style: 'margin-top:6px;' }, [
+          UI.btn('다른 그림으로 바꾸기', { onClick: () => fileInput.click() }),
+          UI.btn('그림 빼기', { onClick: () => { ctx.attachment = null; ctx.firstFromDrawing = false; renderAll(); } })
+        ])
+      ] : [
+        el('div', { style: 'font-size:3em;', 'aria-hidden': 'true', text: '🖼️' }),
+        el('p', { text: '내가 그린 그림을 첫 장면으로 넣을 수 있어요.' }),
+        el('div', { class: 'actions', style: 'margin-top:6px;' }, [
+          UI.btn('📷 사진 찍기', { kind: 'primary', onClick: () => cameraInput.click() }),
+          UI.btn('📁 파일에서 고르기', { kind: 'sky', onClick: () => fileInput.click() })
+        ])
+      ]);
+
+      const cards = [];
+      if (has) {
+        cards.push(UI.card({
+          emoji: '🖼️', label: '내 그림 그대로', desc: '내가 그린 그림이 1장이 돼요', theme: 'butter',
+          speak: '내 그림 그대로. 내가 그린 그림이 첫 장면이 돼요',
+          chosen: ctx.firstPicked && ctx.firstFromDrawing,
+          onClick: () => pickWay(true)
+        }));
+      }
+      cards.push(UI.card({
+        emoji: '✨',
+        label: 'AI가 그려줘요',
+        desc: has ? '내 그림을 보고 첫 장면을 그려요' : '내가 고른 것으로 첫 장면을 그려요',
+        theme: 'lilac',
+        speak: has ? 'AI가 그려줘요. 내 그림을 보고 첫 장면을 그려요' : 'AI가 그려줘요. 내가 고른 것으로 첫 장면을 그려요',
+        chosen: ctx.firstPicked && !ctx.firstFromDrawing,
+        onClick: () => pickWay(false)
+      }));
+
+      UI.render([
+        UI.title('그림책의 첫 장면을 정해요', '여기에서 고른 주인공이 마지막 장까지 그대로 나와요.'),
+        UI.notice('학생 얼굴 사진이나 목소리는 올리지 마세요. 직접 그린 그림만 사용해요.', 'privacy', '🔒'),
+        preview,
+        fileInput, cameraInput,
+        msgBox,
+        el('p', { class: 'field__hint', style: 'text-align:center; margin-top:18px;',
+                  text: '첫 장면을 어떻게 만들까요? 카드를 누르면 다음으로 넘어가요.' }),
+        UI.grid(cards),
+        readAloudRow('첫 장면을 어떻게 만들까요?', cards.length > 1
+          ? ['내 그림 그대로', 'AI가 그려줘요'] : ['AI가 그려줘요'])
+      ]);
+    }
+
+    renderAll();
   }
 
   /* ================= 4) 그림 첨부 ================= */
@@ -478,8 +581,16 @@ const App = (() => {
         const a = ctx.answers[step.spec.id];
         if (a) rows.push(rowFor({ q: step.spec.ask, a: a.label, emoji: a.emoji, step: i }));
       }
-      if (step.kind === 'pages') {
-        rows.push(rowFor({ q: '그림책 장수', a: `${ctx.pageCount}장`, emoji: '📖', step: i }));
+      if (step.kind === 'first') {
+        rows.push(rowFor({
+          q: '그림책 첫 장면',
+          a: ctx.attachment
+            ? (ctx.firstFromDrawing ? '내 그림 그대로' : '내 그림을 보고 AI가 그려요')
+            : 'AI가 그려요',
+          emoji: '📖',
+          thumb: ctx.attachment ? ctx.attachment.dataUrl : null,
+          step: i
+        }));
       }
       if (step.kind === 'name') {
         rows.push(rowFor({ q: '주인공 이름', a: ctx.heroName || '(안 지었어요)', emoji: '🏷️', step: i }));
@@ -493,15 +604,20 @@ const App = (() => {
     });
 
     const mode = CFG.MODES.find(m => m.id === ctx.mode);
+    const isBook = ctx.mode === 'book';
     UI.render([
       UI.title('이렇게 만들까요?', '바꾸고 싶은 줄을 누르면 그것만 다시 고를 수 있어요.'),
       el('div', { class: 'summary-list' }, rows),
       ctx.mode === 'video'
         ? UI.notice(`영상은 만드는 데 시간이 걸려요. 다 만들면 오늘 남은 횟수가 ${Math.max(0, Store.videoRemaining() - 1)}번이 돼요.`, 'info', '🎬')
         : null,
+      isBook
+        ? UI.notice('먼저 첫 장면을 만들어요. 그 다음에는 이어질 이야기를 내가 골라서 한 장씩 이어 만들어요.', 'info', '📖')
+        : null,
       el('div', { class: 'actions' }, [
         UI.btn('처음으로', { onClick: goHome }),
-        UI.btn(`${mode.emoji} 이렇게 만들래요`, { kind: 'primary', onClick: startMaking })
+        UI.btn(isBook ? '📖 첫 장면 만들기' : `${mode.emoji} 이렇게 만들래요`,
+               { kind: 'primary', onClick: startMaking })
       ])
     ]);
   }
@@ -512,17 +628,18 @@ const App = (() => {
     edit:  ['그림을 보고 있어요…', '색을 칠하고 있어요…', '조금만 더 기다려 주세요…', '거의 다 됐어요…'],
     song:  ['악기를 준비하고 있어요…', '멜로디를 만들고 있어요…', '노래를 다듬고 있어요…', '거의 다 됐어요…'],
     video: ['장면을 생각하고 있어요…', '영상을 찍고 있어요…', '영상은 시간이 조금 걸려요…', '조금만 더 기다려 주세요…'],
-    book:  ['이야기를 짓고 있어요…', '첫 번째 그림을 그려요…', '다음 그림을 그려요…', '책을 묶고 있어요…'],
+    book:  ['이야기를 시작하고 있어요…', '첫 번째 그림을 그려요…', '조금만 더 기다려 주세요…', '거의 다 됐어요…'],
+    booknext: ['다음 이야기를 생각하고 있어요…', '같은 주인공을 그려요…', '다음 장면을 그려요…', '거의 다 됐어요…'],
     story: ['고른 것을 모으고 있어요…', '이야기를 짓고 있어요…', '문장을 다듬고 있어요…', '거의 다 됐어요…']
   };
 
   let makingTimer = null;
 
-  function screenMaking() {
+  function screenMaking(msgsKey) {
     Panels.setHelp('making');
     UI.setBack(null);
     UI.setStep('만드는 중이에요');
-    const msgs = MAKING_MSGS[ctx.mode] || MAKING_MSGS.image;
+    const msgs = MAKING_MSGS[msgsKey || ctx.mode] || MAKING_MSGS.image;
     const msgEl = el('p', { class: 'making__msg', text: msgs[0], 'aria-live': 'polite' });
     const dots = el('div', { class: 'progress-dots' },
       msgs.map((_, i) => el('i', { class: i === 0 ? 'on' : '', 'aria-hidden': 'true' })));
@@ -559,6 +676,9 @@ const App = (() => {
   }
 
   async function startMaking() {
+    // 그림책은 한 번에 다 만들지 않고, 학생이 한 장씩 이어 만듭니다.
+    if (ctx.mode === 'book') return startBook();
+
     screenMaking();
     try {
       if (!API.hasKey()) throw new API.ApiError('API 키가 아직 없어요. 선생님께 부탁해 주세요.', 'nokey');
@@ -586,22 +706,10 @@ const App = (() => {
         // 글자 모델만 사용합니다(무료 키로도 잘 됩니다). 이야기는 아래에서 만들어요.
         ctx.result = { kind: 'story', blobs: [] };
       }
-      else if (ctx.mode === 'book') {
-        const scenes = await API.makeBookScenes(ctx, ctx.pageCount);
-        const blobs = [];
-        for (const s of scenes) {
-          blobs.push(await API.generateImage(`${s.image} ${API.SAFE_STYLE}`, ctx.attachment));
-        }
-        ctx.result = { kind: 'book', blobs, texts: scenes.map(s => s.text) };
-      }
 
       // 이야기 문장 (실패해도 앱이 멈추지 않도록 직접 만든 문장으로 대체)
-      if (ctx.result.kind === 'book') {
-        ctx.story = ctx.result.texts.join(' ');
-      } else {
-        try { ctx.story = await API.makeStory(ctx); } catch (_) { ctx.story = ''; }
-        if (!ctx.story) ctx.story = localStory();
-      }
+      try { ctx.story = await API.makeStory(ctx); } catch (_) { ctx.story = ''; }
+      if (!ctx.story) ctx.story = localStory();
 
       stopMaking();
       Store.beep('done');
@@ -626,6 +734,255 @@ const App = (() => {
       return `내가 그린 그림을 ${c} 했어요. 참 멋져요.`;
     }
     return `${place}에 ${who}가 있어요. ${who}는 ${act}. 기분이 ${mood}.`;
+  }
+
+  /* =========================================================
+     7-2) 그림책 — 학생이 한 장씩 이어 만들기
+     첫 장면을 만든 뒤에는 "다음에 무슨 일이 일어날까요?" 카드를 눌러
+     같은 주인공으로 다음 장면을 이어 만듭니다. 언제든 그만두고 책을 완성할 수 있어요.
+     ========================================================= */
+
+  function bookMaxPages() {
+    const v = Number(Store.get('bookMaxPages'));
+    return Math.max(2, Math.min(8, v || 6));
+  }
+
+  /* 화면에 그림을 띄우려고 만든 주소는 다 쓰면 돌려줍니다(메모리 아끼기). */
+  function releaseBookUrls() {
+    if (!ctx || !ctx.pages) return;
+    ctx.pages.forEach(p => { if (p.url) { URL.revokeObjectURL(p.url); p.url = null; } });
+  }
+
+  function pushPage(text, blob, choiceLabel) {
+    ctx.pages.push({ text: text, blob: blob, url: URL.createObjectURL(blob), choice: choiceLabel || '' });
+  }
+
+  function localFirstText() {
+    const who = ctx.heroName || ((ctx.answers.hero && ctx.answers.hero.label) || '주인공');
+    const place = ctx.topic ? ctx.topic.label : '이곳';
+    return `${place}에 ${who}가 있어요.`;
+  }
+
+  /* ---------- 첫 장면 만들기 ---------- */
+  async function startBook() {
+    releaseBookUrls();
+    ctx.pages = [];
+    ctx.nextChoices = null;
+    ctx.character = '';
+    ctx.savedId = null;
+
+    const asIs = !!(ctx.firstFromDrawing && ctx.attachment);
+    screenMaking('book');
+    try {
+      if (!API.hasKey()) throw new API.ApiError('API 키가 아직 없어요. 선생님께 부탁해 주세요.', 'nokey');
+
+      // 첫 장면의 문장과 주인공 생김새를 받아 둡니다.
+      // (내 그림을 그대로 쓸 때는 글자 모델이 잘 안 되어도 계속 만들 수 있게 합니다.)
+      let scene;
+      try {
+        scene = await API.makeFirstScene(ctx, { attachment: ctx.attachment, useAsIs: asIs });
+      } catch (e) {
+        if (!asIs) throw e;
+        scene = { text: localFirstText(), image: '', character: '' };
+      }
+      ctx.character = scene.character || '';
+
+      const blob = asIs
+        ? UI.dataUrlToBlob(ctx.attachment.dataUrl)                       // 내 그림이 그대로 1장이 돼요
+        : await API.generateImage(API.firstScenePrompt(scene), ctx.attachment);
+
+      pushPage(scene.text || localFirstText(), blob, '');
+      stopMaking();
+      Store.beep('done');
+      UI.announce('첫 장면이 만들어졌어요.');
+      screenBook();
+    } catch (e) {
+      stopMaking();
+      screenError(e);
+    }
+  }
+
+  /* ---------- 학생이 고른 줄거리로 다음 장면 ---------- */
+  async function addNextPage(choice) {
+    Speech.stop();
+    screenMaking('booknext');
+    try {
+      if (!API.hasKey()) throw new API.ApiError('API 키가 아직 없어요. 선생님께 부탁해 주세요.', 'nokey');
+
+      let scene;
+      try {
+        scene = await API.makeNextScene(ctx, choice);
+      } catch (_) {
+        // 문장을 못 받아도 그림은 이어 그릴 수 있게 합니다.
+        scene = { text: `${ctx.heroName || '주인공'}는 ${choice.label}`, image: `The same main character: ${choice.label}.` };
+      }
+
+      const prev = ctx.pages[ctx.pages.length - 1];
+      const ref = await UI.blobToAttachment(prev.blob);     // 앞 장면 그림 → 같은 주인공으로 이어 그리기
+      const blob = await API.generateImage(API.nextScenePrompt(ctx, scene), ref);
+
+      pushPage(scene.text, blob, choice.label);
+      ctx.nextChoices = null;
+      stopMaking();
+      Store.beep('done');
+      UI.announce(`${ctx.pages.length}번째 장면이 만들어졌어요.`);
+      screenBook();
+    } catch (e) {
+      stopMaking();
+      // 지금까지 만든 장면은 그대로 두고, 화면 안에서 다시 해 볼 수 있게 합니다.
+      screenBook(bookErrorNotice(e));
+    }
+  }
+
+  function bookErrorNotice(e) {
+    const msg = (e && e.message) || '지금은 다음 장면을 만들지 못했어요.';
+    return el('div', {}, [
+      UI.notice(`${msg} 지금까지 만든 장면은 그대로 있어요. 다시 골라 볼까요?`, null, '🌤️'),
+      teacherErrorDetail(e)
+    ]);
+  }
+
+  /* ---------- 다음 줄거리 카드 ---------- */
+  async function loadNextChoices(count) {
+    try {
+      if (!API.hasKey()) throw new Error('nokey');
+      return await API.makeNextChoices(ctx, count);
+    } catch (_) {
+      return nextFallback(count);       // 오프라인·실패해도 이야기를 이어 갈 수 있어요
+    }
+  }
+
+  function nextFallback(count) {
+    const used = ctx.pages.map(p => p.choice).filter(Boolean);
+    const pool = (CFG.FALLBACK.next._any || []).filter(c => used.indexOf(c.label) === -1);
+    return shuffled(pool.length >= count ? pool : CFG.FALLBACK.next._any).slice(0, count);
+  }
+
+  /* ---------- 그림책 만드는 화면 ---------- */
+  async function screenBook(extra) {
+    Panels.setHelp('book');
+    Speech.stop();
+    UI.setBack(null);          // 여기서 뒤로 가면 만든 장면이 사라지므로 아래 단추로만 움직여요
+    const max = bookMaxPages();
+    UI.setStep(`그림책 — ${ctx.pages.length}장째`, Math.min(ctx.pages.length, max), max);
+
+    if (ctx.pages.length >= max) { renderBook(extra, null, true); return; }
+
+    if (!ctx.nextChoices) {
+      renderBook(extra, null, false);                      // 카드를 준비하는 동안
+      const count = Number(Store.get('choiceCount')) || 4;
+      const list = await loadNextChoices(count);
+      // 준비하는 사이에 학생이 다른 곳으로 갔으면 그리지 않습니다.
+      if (!ctx || ctx.mode !== 'book') return;
+      ctx.nextChoices = list;
+    }
+    renderBook(extra, ctx.nextChoices, true);
+  }
+
+  function bookStrip() {
+    return el('div', { class: 'book-pages' }, ctx.pages.map((p, i) =>
+      el('div', { class: 'book-page' }, [
+        el('img', { src: p.url, alt: `${i + 1}번째 장면` }),
+        el('p', { text: `${i + 1}. ${p.text}` })
+      ])));
+  }
+
+  function renderBook(extra, choices, ready) {
+    const n = ctx.pages.length;
+    const max = bookMaxPages();
+    const full = n >= max;
+    const last = ctx.pages[n - 1];
+    const themes = ['peach', 'mint', 'sky', 'lilac', 'butter', 'rose'];
+
+    const askTitle = '다음에는 무슨 일이 일어날까요?';
+
+    let picker;
+    if (full) {
+      picker = UI.notice(`${max}장까지 만들었어요. 이제 책을 완성해 볼까요?`, 'info', '📚');
+    } else if (!ready) {
+      picker = el('div', { class: 'making', style: 'padding:20px 0;' }, [
+        el('div', { class: 'wave-jar' }, [
+          el('div', { class: 'wave-jar__fill' }),
+          el('div', { class: 'wave-jar__emoji', 'aria-hidden': 'true', text: '🤔' })
+        ]),
+        el('p', { class: 'making__msg', text: '이어질 이야기를 준비하고 있어요…' })
+      ]);
+    } else {
+      picker = UI.grid(choices.map((c, i) => UI.card({
+        emoji: c.emoji, label: c.label, theme: themes[i % themes.length],
+        speak: c.label,
+        onClick: () => addNextPage(c)
+      })));
+    }
+
+    UI.render([
+      UI.title(n === 1 ? '첫 장면이 만들어졌어요! 🎉' : `${n}장까지 만들었어요! 🎉`,
+               full ? '책이 가득 찼어요. 이제 완성해 보세요.' : '이어질 이야기를 골라 한 장씩 늘려 가요.'),
+
+      last ? el('div', { class: 'result-stage' }, [
+        el('img', { src: last.url, alt: `${n}번째 장면` })
+      ]) : null,
+
+      last ? el('div', { class: 'story-box' }, [
+        el('p', { text: `${n}. ${last.text}` }),
+        Speech.supported ? el('div', { class: 'actions', style: 'margin-top:12px;' }, [
+          UI.btn('🔊 읽어주기', { kind: 'mint', onClick: () => Speech.speak(last.text) }),
+          UI.btn('⏹ 그만 듣기', { onClick: () => Speech.stop() })
+        ]) : null
+      ]) : null,
+
+      n > 1 ? el('div', {}, [
+        el('p', { class: 'field__hint', style: 'text-align:center;', text: `지금까지 만든 장면 (${n}장 / 최대 ${max}장)` }),
+        bookStrip()
+      ]) : null,
+
+      extra || null,
+
+      full ? null : el('h2', { class: 'title', style: 'font-size:1.25em; margin-top:26px;', text: askTitle }),
+      picker,
+
+      (ready && !full) ? readAloudRow(askTitle, choices.map(c => c.label)) : null,
+      (ready && !full) ? el('div', { class: 'actions' }, [
+        UI.btn('🔁 다른 이야기 보여주세요', {
+          onClick: () => { Speech.stop(); ctx.nextChoices = null; screenBook(); }
+        }),
+        n > 1 ? UI.btn('↩️ 마지막 장 지우기', {
+          ariaLabel: '마지막으로 만든 장면 지우기',
+          onClick: () => {
+            Speech.stop();
+            const p = ctx.pages.pop();
+            if (p && p.url) URL.revokeObjectURL(p.url);
+            ctx.nextChoices = null;
+            UI.announce('마지막 장면을 지웠어요.');
+            screenBook();
+          }
+        }) : null
+      ]) : null,
+
+      el('div', { class: 'actions' }, [
+        UI.btn('📚 여기까지! 책 완성하기', { kind: 'primary', onClick: finishBook }),
+        UI.btn('🏠 처음으로', {
+          onClick: () => {
+            if (!confirm('만들던 그림책을 그만둘까요? 지금까지 만든 장면은 사라져요.')) return;
+            Speech.stop();
+            goHome();
+          }
+        })
+      ])
+    ]);
+  }
+
+  function finishBook() {
+    Speech.stop();
+    ctx.result = {
+      kind: 'book',
+      blobs: ctx.pages.map(p => p.blob),
+      texts: ctx.pages.map(p => p.text)
+    };
+    ctx.story = ctx.pages.map(p => p.text).join(' ');
+    ctx.savedId = null;
+    Store.beep('done');
+    screenResult();
   }
 
   /* ================= 오류 (부드럽게) ================= */
@@ -741,9 +1098,12 @@ const App = (() => {
   function screenResult() {
     Panels.setHelp('result');
     UI.setStep('다 만들었어요!');
-    UI.setBack(() => go(flow.length - 1));
 
     const r = ctx.result;
+    /* 그림책은 뒤로 가면 만들던 화면으로 돌아가 더 이어 만들 수 있습니다. */
+    const backToBook = ctx.mode === 'book' && ctx.pages.length > 0;
+    UI.setBack(backToBook ? () => screenBook() : () => go(flow.length - 1));
+
     const isStory = r.kind === 'story';
     const urls = r.blobs.map(b => URL.createObjectURL(b));
 
@@ -851,9 +1211,11 @@ const App = (() => {
 
     function fileName(i, blobs) {
       const base = (ctx.title || '내작품').replace(/[\\/:*?"<>|]/g, '') || '내작품';
+      const type = (blobs[i] && blobs[i].type) || '';
       const ext = isStory ? 'txt'
                 : r.kind === 'video' ? 'mp4'
                 : r.kind === 'audio' ? (r.blobs[0].type.includes('mpeg') ? 'mp3' : 'wav')
+                : type.includes('jpeg') ? 'jpg'      // 내가 올린 그림이 그대로 1장이 된 경우
                 : 'png';
       return blobs.length > 1 ? `${base}-${i + 1}.${ext}` : `${base}.${ext}`;
     }
@@ -906,7 +1268,8 @@ const App = (() => {
     });
 
     UI.render([
-      UI.title('다 만들었어요! 🎉', '이름을 붙이고 저장해 보세요.'),
+      UI.title(backToBook ? `${ctx.pages.length}장짜리 그림책이 완성됐어요! 🎉` : '다 만들었어요! 🎉',
+               '이름을 붙이고 저장해 보세요.'),
       stageInner ? el('div', { class: 'result-stage' }, [stageInner]) : null,
 
       el('div', { class: 'field' }, [
@@ -944,7 +1307,9 @@ const App = (() => {
                     text: '💡 그림을 길게 누르면 “이미지 저장”으로도 사진 앱에 담을 수 있어요.' })
         : null,
       el('div', { class: 'actions' }, [
-        UI.btn('🔁 다시 만들기', { onClick: () => { Speech.stop(); ctx.savedId = null; startMaking(); } }),
+        backToBook
+          ? UI.btn('📖 더 이어서 만들기', { onClick: () => { Speech.stop(); screenBook(); } })
+          : UI.btn('🔁 다시 만들기', { onClick: () => { Speech.stop(); ctx.savedId = null; startMaking(); } }),
         UI.btn('🏠 처음으로', { onClick: () => { Speech.stop(); goHome(); } })
       ])
     ]);

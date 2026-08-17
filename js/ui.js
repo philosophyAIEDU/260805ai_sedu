@@ -194,6 +194,23 @@ const UI = (() => {
     });
   }
 
+  /* data URL → Blob (올린 그림을 그대로 작품 파일로 쓸 때) */
+  function dataUrlToBlob(dataUrl) {
+    const [head, b64] = String(dataUrl).split(',');
+    const mime = (head.match(/data:([^;]+)/) || [])[1] || 'image/png';
+    const bin = atob(b64 || '');
+    const buf = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+    return new Blob([buf], { type: mime });
+  }
+
+  /* Blob → 모델에 다시 보낼 수 있는 형태
+     (그림책에서 앞 장면 그림을 다음 장면 요청에 함께 보낼 때 씁니다) */
+  async function blobToAttachment(blob) {
+    const dataUrl = await blobToDataUrl(blob);
+    return { dataUrl, mimeType: blob.type || 'image/png', base64: String(dataUrl).split(',')[1] };
+  }
+
   function download(blob, filename) {
     const url = URL.createObjectURL(blob);
     const a = el('a', { href: url, download: filename });
@@ -253,7 +270,7 @@ const UI = (() => {
     el, render, setStep, setBack, announce,
     title, card, grid, notice, btn,
     openOverlay, closeOverlay, anyOverlayOpen,
-    fileToAttachment, blobToDataUrl, download, todayText,
+    fileToAttachment, blobToDataUrl, dataUrlToBlob, blobToAttachment, download, todayText,
     saveHint, canShareFiles, shareFiles, isIOS,
     screenEl
   };

@@ -280,9 +280,12 @@ const Panels = (() => {
     /* --- 학생 화면 --- */
     body.appendChild(el('div', { class: 'setting-group' }, [
       el('h3', { text: '🧒 학생 화면' }),
-      row('선택지 개수', '학생 수준에 맞춰 줄일 수 있어요.',
+      row('선택지 개수', '학생 수준에 맞춰 줄일 수 있어요. 그림책의 “다음 이야기” 카드 수도 같이 바뀝니다.',
         segmented([{label:'2개',value:2},{label:'3개',value:3},{label:'4개',value:4}],
           Store.get('choiceCount'), v => Store.set('choiceCount', Number(v)), '선택지 개수')),
+      row('📖 그림책 최대 장수', '학생이 이어 만들 수 있는 장면 수예요. 한 장마다 그림을 한 번 만들기 때문에 시간과 비용에 그대로 영향을 줍니다.',
+        segmented([{label:'2장',value:2},{label:'4장',value:4},{label:'6장',value:6},{label:'8장',value:8}],
+          Store.get('bookMaxPages'), v => Store.set('bookMaxPages', Number(v)), '그림책 최대 장수')),
       row('글자 크기', null,
         segmented([{label:'작게',value:'s'},{label:'보통',value:'m'},{label:'크게',value:'l'},{label:'아주 크게',value:'xl'}],
           Store.get('fontSize'), v => Store.set('fontSize', v), '글자 크기')),
@@ -500,6 +503,7 @@ const Panels = (() => {
       el('ul', {}, [
         el('li', { text: '글자(선택지·이야기·이름 제안): 가장 저렴합니다. 한 차시 내내 써도 부담이 적습니다.' }),
         el('li', { text: '그림 만들기 / 내 그림 바꾸기: 보통입니다. 한 장에 몇 원~수십 원 수준.' }),
+        el('li', { text: '그림책 만들기: 학생이 장면을 이어 만들 때마다 그림을 한 장씩 만듭니다. 6장짜리 그림책이면 그림 6장 값이에요. "그림책 최대 장수"로 조절해 주세요. (첫 장면을 “내 그림 그대로”로 하면 그 한 장은 만들지 않아 비용이 들지 않습니다)' }),
         el('li', { text: '노래 만들기: 그림보다 비쌉니다.' }),
         el('li', { text: '영상 만들기: 가장 비쌉니다. 한 편에 그림 수십 장 값이 들 수 있어 하루 횟수 제한을 두었습니다.' }),
         el('li', { text: '읽어주기: 무료입니다. 브라우저 기능만 사용합니다.' })

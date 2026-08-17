@@ -31,6 +31,7 @@ const CFG = {
     videoDailyLimit: 3,      // 0~10 (0이면 영상 기능 잠김)
     features: { image: true, song: true, video: true, edit: true, book: true, story: true },
     choiceCount: 4,          // 2 / 3 / 4
+    bookMaxPages: 6,         // 그림책을 최대 몇 장까지 이어 만들 수 있는지 (2~8)
     fontSize: 'm',           // s / m / l / xl
     soundEffects: false,     // 기본 꺼짐
     speechRate: 0.9,         // 0.5 ~ 1.5
@@ -44,7 +45,7 @@ const CFG = {
     { id: 'song',  emoji: '🎵', label: '노래 만들기',    desc: '내 이야기로 노래를 만들어요',            theme: 'mint'   },
     { id: 'video', emoji: '🎬', label: '영상 만들기',    desc: '내 이야기로 짧은 영상을 만들어요',        theme: 'sky'    },
     { id: 'edit',  emoji: '🖍️', label: '내 그림 바꾸기', desc: '내가 그린 그림에 색을 칠하거나 배경을 바꿔요', theme: 'butter' },
-    { id: 'book',  emoji: '📖', label: '그림책 만들기',  desc: '그림 3~4장으로 이야기책을 만들어요',      theme: 'lilac'  },
+    { id: 'book',  emoji: '📖', label: '그림책 만들기',  desc: '첫 장면을 넣고 다음 이야기를 내가 이어요', theme: 'lilac'  },
     // 글자 모델만 있으면 되는 기능 — 무료 API 키로도 잘 동작합니다.
     { id: 'story', emoji: '📝', label: '이야기 만들기',  desc: '고른 것으로 이야기를 만들고 읽어줘요',    theme: 'rose'   }
   ],
@@ -119,7 +120,13 @@ const CFG = {
                         {label:'플루트',emoji:'🪈'}, {label:'하프',emoji:'🎻'} ] },
     where:    { _any: [ {label:'집에서',emoji:'🏠'}, {label:'교실에서',emoji:'🏫'}, {label:'잠들기 전에',emoji:'🌙'}, {label:'놀이터에서',emoji:'🛝'} ] },
     /* 그림 바꾸기용 — 고정 목록 사용 */
-    change:   { _any: [ {label:'색칠하기',emoji:'🖍️'}, {label:'배경 넣기',emoji:'🏞️'}, {label:'반짝이게',emoji:'✨'}, {label:'만화처럼',emoji:'💥'} ] }
+    change:   { _any: [ {label:'색칠하기',emoji:'🖍️'}, {label:'배경 넣기',emoji:'🏞️'}, {label:'반짝이게',emoji:'✨'}, {label:'만화처럼',emoji:'💥'} ] },
+    /* 그림책에서 "다음에 무슨 일이 일어날까요?" 줄거리 카드 (API 실패·오프라인용) */
+    next:     { _any: [ {label:'친구를 만나요',emoji:'🤝'}, {label:'선물을 찾아요',emoji:'🎁'}, {label:'같이 놀아요',emoji:'🪁'},
+                        {label:'맛있는 걸 먹어요',emoji:'🍎'}, {label:'노래를 불러요',emoji:'🎤'}, {label:'춤을 춰요',emoji:'💃'},
+                        {label:'더 멀리 가 봐요',emoji:'🧭'}, {label:'숨은 길을 찾아요',emoji:'🗺️'},
+                        {label:'예쁜 것을 봐요',emoji:'🌸'}, {label:'집으로 돌아가요',emoji:'🏠'},
+                        {label:'포근하게 쉬어요',emoji:'🧸'}, {label:'푹 자요',emoji:'😴'} ] }
   },
 
   /* ---------- 처음 실행 안내 ---------- */
@@ -128,6 +135,8 @@ const CFG = {
       text: '고르기만 하면 그림, 노래, 영상, 그림책이 만들어져요.\n글을 많이 쓰지 않아도 괜찮아요.' },
     { emoji: '👆', title: '카드를 눌러서 골라요',
       text: '한 화면에 질문이 하나씩 나와요.\n마음에 드는 카드를 누르면 다음으로 넘어가요.' },
+    { emoji: '📖', title: '그림책은 내가 이어 만들어요',
+      text: '첫 장면을 넣고, 다음에 무슨 일이 일어날지 내가 골라요.\n같은 주인공이 끝까지 나와요.' },
     { emoji: '↩️', title: '언제든 다시 고를 수 있어요',
       text: '틀린 답은 없어요.\n왼쪽 위 “뒤로”를 누르면 앞으로 돌아가요.' },
     { emoji: '🔊', title: '만든 이야기를 읽어줘요',
@@ -140,6 +149,8 @@ const CFG = {
     topic:       '이야기가 펼쳐질 곳을 골라요. 카드의 🔊 를 누르면 “우주”, “바다” 같은 낱말을 읽어 주고, 아래 “하나씩 읽어주기”를 누르면 차례로 읽어 줘요.',
     question:    '질문을 읽고 마음에 드는 카드를 하나 눌러요. 🔊 를 누르면 읽어 줘요. 틀린 답은 없어요.',
     attach:      '내가 그린 그림을 사진으로 찍거나 파일로 올려요. 안 올려도 괜찮아요.',
+    first:       '그림책의 첫 장면을 정해요. 내가 그린 그림을 올려서 첫 장면으로 쓸 수도 있고, 고른 것으로 AI가 그려 줄 수도 있어요.',
+    book:        '지금까지 만든 장면이 위에 보여요. 아래 카드 중 하나를 누르면 그 이야기로 다음 장면이 만들어져요. 주인공은 그대로예요. 다 만들었으면 “여기까지! 책 완성하기”를 눌러요.',
     attachEdit:  '바꾸고 싶은 내 그림을 올려 주세요. 이 기능은 그림이 꼭 필요해요.',
     name:        '주인공 이름을 지어 줄 수 있어요. 안 써도 괜찮아요.',
     confirm:     '고른 것들을 확인해요. 바꾸고 싶은 줄을 누르면 그것만 다시 고를 수 있어요.',

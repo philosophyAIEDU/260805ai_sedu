@@ -596,9 +596,12 @@ ${ctx.heroName ? '주인공 이름: ' + ctx.heroName : ''}
   /* =========================================================
      6) 그림 만들기 / 내 그림 바꾸기
      ========================================================= */
+  /* att 는 그림 하나 또는 여러 개(배열)를 받습니다.
+     그림책에서 "앞 장면 그림"을 함께 보내 같은 주인공을 이어 그리게 할 때 씁니다. */
   async function generateImage(prompt, att) {
+    const atts = (Array.isArray(att) ? att : [att]).filter(Boolean);
     const parts = [{ text: prompt }];
-    if (att) parts.push({ inline_data: { mime_type: att.mimeType, data: att.base64 } });
+    atts.forEach(a => parts.push({ inline_data: { mime_type: a.mimeType, data: a.base64 } }));
 
     const json = await callModel(CFG.MODELS.image, 'generateContent', {
       contents: [{ role: 'user', parts }],
@@ -720,29 +723,149 @@ ${ctx.heroName ? '주인공 이름: ' + ctx.heroName : ''}
   }
 
   /* =========================================================
-     9) 그림책 만들기 — 장면 3~4개의 문장 + 그림
+     9) 그림책 만들기 — 학생이 한 장씩 이어 만듭니다.
+        ① 첫 장면(makeFirstScene) → ② 다음 줄거리 카드(makeNextChoices)
+        → ③ 학생이 고른 줄거리로 다음 장면(makeNextScene) → ②~③ 반복
+        주인공이 바뀌지 않도록 ctx.character(영어 생김새 묘사)와
+        "앞 장면 그림"을 매번 함께 보냅니다.
      ========================================================= */
-  async function makeBookScenes(ctx, pageCount) {
-    const n = pageCount || 3;
-    const prompt =
-`특수학교 학생이 고른 내용으로 ${n}장짜리 그림책을 만들 거야.
 
-고른 것: ${describePicks(ctx)}
-
-각 장면마다:
-- "text": 한국어 한 문장. 아주 쉽고 짧게(15자 안팎). 밝고 따뜻하게.
-- "image": 그 장면을 그리기 위한 영어 묘사 한 문장(30단어 이내).
-처음-가운데-끝이 자연스럽게 이어지게 해 줘. 무섭거나 슬픈 내용 금지.
-
-JSON 배열만 출력: [{"text":"...","image":"..."}, ...]`;
-    const raw = await askText(prompt, { json: true, temperature: 1.1, maxOutputTokens: 900 });
-    const arr = parseJson(raw);
-    if (!Array.isArray(arr) || !arr.length) throw new ApiError('이야기를 만들지 못했어요.', 'parse');
-    return arr.slice(0, n).map((s, i) => ({
-      text: (s && s.text) ? String(s.text).trim() : `${i + 1}번째 장면이에요.`,
-      image: (s && s.image) ? String(s.image).trim() : localPrompt(ctx)
-    }));
+  /* 지금까지 만든 장면들을 한국어 줄거리로 정리 */
+  function storySoFar(ctx) {
+    return (ctx.pages || []).map((p, i) => `${i + 1}) ${p.text}`).join('\n') || '(아직 없음)';
   }
+
+  /* 주인공을 한 줄로 — 이름·고른 주인공·영어 생김새 묘사를 모읍니다. */
+  function heroLine(ctx) {
+    const bits = [];
+    if (ctx.heroName) bits.push(ctx.heroName);
+    const hero = ctx.answers && ctx.answers.hero;
+    if (hero && hero.label) bits.push(hero.label);
+    if (ctx.character) bits.push(ctx.character);
+    return bits.join(' / ') || '이야기의 주인공';
+  }
+
+  /* 앞 장면 그림을 함께 보낼 때 붙이는 지시어 — 같은 주인공·같은 그림체로 이어 그리게 합니다. */
+  function keepSameLine(ctx) {
+    return 'The attached image is the previous page of the same picture book. ' +
+           'Keep exactly the SAME main character' +
+           (ctx.character ? ` (${ctx.character})` : '') +
+           ' — same species, same colors, same clothes, same face — and the same art style. ' +
+           'Draw the next page of that book. ';
+  }
+
+  /* ---------- ① 첫 장면 ----------
+     학생이 올린 그림이 있으면 그 그림을 함께 보고 만듭니다.
+     (그림을 그대로 첫 장면으로 쓸 때도, 주인공 생김새를 정확히 받아 두어야
+      다음 장면에서 같은 주인공을 그릴 수 있습니다.) */
+  async function makeFirstScene(ctx, opts) {
+    const o = opts || {};
+    const att = o.attachment || null;
+    const useAsIs = !!o.useAsIs;
+
+    const ask =
+`특수학교(초등~중등) 학생과 함께 그림책의 "첫 장면"을 만들고 있어.
+
+학생이 고른 것: ${describePicks(ctx)}
+${ctx.heroName ? '주인공 이름: ' + ctx.heroName : ''}
+${att ? (useAsIs
+  ? '첨부한 그림이 바로 첫 장면 그림이야. 그림 속 주인공을 그대로 살펴봐 줘.'
+  : '첨부한 그림은 학생이 직접 그린 그림이야. 이 그림의 주인공을 살려 줘.') : ''}
+
+아래 JSON 객체만 출력해. 다른 말은 쓰지 마.
+{"text":"첫 장면을 설명하는 한국어 한 문장. 아주 쉽고 짧게(15자 안팎). 밝고 따뜻하게.",
+ "image":"첫 장면을 그리기 위한 영어 묘사 한 문장(30단어 이내).",
+ "character":"주인공의 생김새를 고정하기 위한 영어 묘사(종류·색·모양·옷 포함, 25단어 이내). 뒷장에서도 똑같이 그릴 수 있게 구체적으로."}`;
+
+    const parts = [{ text: ask }];
+    if (att) parts.push({ inline_data: { mime_type: att.mimeType, data: att.base64 } });
+
+    const json = await callModel(CFG.MODELS.text, 'generateContent', {
+      contents: [{ role: 'user', parts }],
+      generationConfig: { temperature: 1.0, maxOutputTokens: 500, responseMimeType: 'application/json' }
+    }, 40000, { retries: 0 });
+
+    const s = parseJson(textOf(json)) || {};
+    return {
+      text: s.text ? String(s.text).trim() : localFirstText(ctx),
+      image: s.image ? String(s.image).trim() : localPrompt(ctx),
+      character: s.character ? String(s.character).trim().slice(0, 200) : ''
+    };
+  }
+
+  function localFirstText(ctx) {
+    const who = ctx.heroName || ((ctx.answers && ctx.answers.hero && ctx.answers.hero.label) || '주인공');
+    const place = ctx.topic ? ctx.topic.label : '이곳';
+    return `${place}에 ${who}가 있어요.`;
+  }
+
+  /* ---------- ② 다음에 이어질 줄거리 카드 ---------- */
+  async function makeNextChoices(ctx, count) {
+    const n = count || 4;
+    const used = (ctx.pages || []).map(p => p.choice).filter(Boolean).join(', ');
+    const prompt =
+`특수학교(초등~중등) 학생이 그림책을 한 장씩 이어 만들고 있어.
+학생이 "다음에 무슨 일이 일어날까?"를 직접 고를 수 있도록 줄거리 카드 ${n}개를 만들어 줘.
+
+주인공: ${heroLine(ctx)}
+이야기가 펼쳐지는 곳: ${ctx.topic ? ctx.topic.label : '자유'}
+지금까지의 이야기:
+${storySoFar(ctx)}
+${used ? '이미 고른 줄거리(다시 넣지 마): ' + used : ''}
+
+규칙:
+- 주인공은 그대로야. 다른 주인공으로 바뀌는 내용은 절대 만들지 마.
+- 마지막 장면 다음에 바로 이어질 수 있는 일이어야 해.
+- 각 항목은 아주 쉬운 한국어 4~10글자 정도의 짧은 말. 예: "친구를 만나요", "하늘로 올라가요".
+- ${n}개가 서로 뚜렷하게 달라야 해. 밝고 따뜻하고 즐거운 것만. 무섭거나 슬픈 것 금지.
+- 각 항목에 어울리는 이모지 딱 1개.
+- 새로운 조합으로 만들어 줘. (무작위 씨앗 ${Math.floor(Math.random() * 100000)})
+
+아래 JSON 배열만 출력해. 다른 말은 쓰지 마.
+[{"label":"친구를 만나요","emoji":"🤝"}, ...]`;
+
+    const raw = await askText(prompt, { json: true, temperature: 1.3, maxOutputTokens: 500 });
+    const arr = parseJson(raw);
+    if (!Array.isArray(arr)) throw new ApiError('다음 이야기를 만들지 못했어요.', 'parse');
+    const out = arr
+      .filter(x => x && typeof x.label === 'string' && x.label.trim())
+      .map(x => ({
+        label: String(x.label).trim().slice(0, 16),
+        emoji: (String(x.emoji || '✨').match(/\p{Extended_Pictographic}/u) || ['✨'])[0]
+      }))
+      .slice(0, n);
+    if (out.length < 2) throw new ApiError('다음 이야기를 만들지 못했어요.', 'parse');
+    return out;
+  }
+
+  /* ---------- ③ 학생이 고른 줄거리로 다음 장면 ---------- */
+  async function makeNextScene(ctx, choice) {
+    const label = (choice && choice.label) || '';
+    const prompt =
+`특수학교 학생이 만드는 그림책의 다음 장면을 만들 거야. 주인공은 바뀌지 않아.
+
+주인공: ${heroLine(ctx)}
+이야기가 펼쳐지는 곳: ${ctx.topic ? ctx.topic.label : '자유'}
+지금까지의 이야기:
+${storySoFar(ctx)}
+
+학생이 방금 고른 다음 줄거리: "${label}"
+
+아래 JSON 객체만 출력해. 다른 말은 쓰지 마.
+{"text":"학생이 고른 줄거리대로 이어지는 한국어 한 문장. 아주 쉽고 짧게(15자 안팎). 앞 장면과 자연스럽게 이어지게. 밝고 따뜻하게.",
+ "image":"그 장면을 그리기 위한 영어 묘사 한 문장(30단어 이내). 같은 주인공이 그대로 나와야 해."}`;
+
+    const raw = await askText(prompt, { json: true, temperature: 1.0, maxOutputTokens: 400 });
+    const s = parseJson(raw) || {};
+    return {
+      text: s.text ? String(s.text).trim() : `${ctx.heroName || '주인공'}는 ${label}`,
+      image: s.image ? String(s.image).trim() : `${localPrompt(ctx)} The character ${label}.`
+    };
+  }
+
+  /* 장면 묘사 → 실제로 그림 모델에 보낼 문장 */
+  function firstScenePrompt(scene) { return `${scene.image} ${SAFE_STYLE}`; }
+  function nextScenePrompt(ctx, scene) { return `${keepSameLine(ctx)}Next scene: ${scene.image} ${SAFE_STYLE}`; }
 
   return {
     hasKey, ApiError, askText, getLastError, setStatusHandler, checkKey, listModels, isDayLimited,
@@ -750,6 +873,7 @@ JSON 배열만 출력: [{"text":"...","image":"..."}, ...]`;
     makeChoices, makeStory, suggestTitles, describeDrawing,
     refinePrompt, localPrompt, describePicks,
     generateImage, editImage, generateMusic, generateVideo,
-    makeBookScenes, SAFE_STYLE
+    makeFirstScene, makeNextChoices, makeNextScene,
+    firstScenePrompt, nextScenePrompt, SAFE_STYLE
   };
 })();
