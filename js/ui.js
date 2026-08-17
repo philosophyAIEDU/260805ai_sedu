@@ -194,6 +194,90 @@ const UI = (() => {
     });
   }
 
+  /* ---------- 그림에 자막 새겨 넣기 ----------
+     화면에서 보이는 자막은 그림 위에 글자를 얹어 둔 것이라 파일에는 들어가지 않습니다.
+     저장·보내기 할 때 화면에서 보던 그대로(자막까지) 남도록, 그림 안에 직접 그려 넣습니다. */
+  const CAP_FONT = '"Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif';
+
+  /* 그림 너비에 맞게 줄을 나눕니다.
+     낱말이 반으로 갈리지 않도록 띄어쓰기에서 먼저 자르고(화면 자막과 같은 규칙),
+     띄어쓰기가 없는 긴 말은 어쩔 수 없이 글자에서 자릅니다. */
+  function wrapLines(c, text, maxW) {
+    const out = [];
+    let line = '';
+    for (const ch of text) {
+      const test = line + ch;
+      if (line && c.measureText(test).width > maxW) {
+        const cut = line.lastIndexOf(' ');
+        if (cut > 0 && ch !== ' ') {
+          out.push(line.slice(0, cut).trim());
+          line = line.slice(cut + 1) + ch;
+        } else {
+          out.push(line.trim());
+          line = (ch === ' ') ? '' : ch;
+        }
+      } else {
+        line = test;
+      }
+    }
+    if (line.trim()) out.push(line.trim());
+    return out.length ? out : [text];
+  }
+
+  function captionImage(blob, text) {
+    return new Promise((resolve, reject) => {
+      const clean = String(text || '').replace(/\s+/g, ' ').trim();
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('그림을 읽지 못했어요.')); };
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        try {
+          const w = img.naturalWidth  || img.width  || 1;
+          const h = img.naturalHeight || img.height || 1;
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const c = canvas.getContext('2d');
+          c.drawImage(img, 0, 0, w, h);
+
+          if (clean) {
+            const padX = Math.round(w * 0.04);
+            // 글자가 많으면 자막이 그림을 너무 가리지 않도록 조금씩 줄여 봅니다.
+            let size = Math.max(14, Math.round(w * 0.052));
+            let lines, lineH;
+            for (let i = 0; ; i++) {
+              c.font = `800 ${size}px ${CAP_FONT}`;
+              lines = wrapLines(c, clean, w - padX * 2);
+              lineH = Math.round(size * 1.35);
+              if (lines.length * lineH <= h * 0.38 || size <= 14 || i >= 5) break;
+              size = Math.max(14, Math.round(size * 0.85));
+            }
+
+            const padY = Math.round(size * 0.55);
+            const bandH = Math.min(h, lines.length * lineH + padY * 2);
+            const top = h - bandH;
+
+            c.fillStyle = '#FFFFFF';                       // 흰 바탕
+            c.fillRect(0, top, w, bandH);
+            c.fillStyle = 'rgba(0, 0, 0, .12)';            // 그림과 나누는 얇은 선
+            c.fillRect(0, top, w, Math.max(1, Math.round(h * 0.0025)));
+
+            c.fillStyle = '#111111';                       // 까만 글씨
+            c.textAlign = 'center';
+            c.textBaseline = 'middle';
+            c.font = `800 ${size}px ${CAP_FONT}`;
+            lines.forEach((ln, i) => c.fillText(ln, w / 2, top + padY + lineH * i + lineH / 2));
+          }
+
+          canvas.toBlob(b => b ? resolve(b) : reject(new Error('그림을 만들지 못했어요.')), 'image/png');
+        } catch (e) {
+          reject(e);
+        }
+      };
+      img.src = url;
+    });
+  }
+
   /* data URL → Blob (올린 그림을 그대로 작품 파일로 쓸 때) */
   function dataUrlToBlob(dataUrl) {
     const [head, b64] = String(dataUrl).split(',');
@@ -270,7 +354,7 @@ const UI = (() => {
     el, render, setStep, setBack, announce,
     title, card, grid, notice, btn,
     openOverlay, closeOverlay, anyOverlayOpen,
-    fileToAttachment, blobToDataUrl, dataUrlToBlob, blobToAttachment, download, todayText,
+    fileToAttachment, blobToDataUrl, dataUrlToBlob, blobToAttachment, captionImage, download, todayText,
     saveHint, canShareFiles, shareFiles, isIOS,
     screenEl
   };

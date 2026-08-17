@@ -630,6 +630,7 @@ const App = (() => {
     video: ['장면을 생각하고 있어요…', '영상을 찍고 있어요…', '영상은 시간이 조금 걸려요…', '조금만 더 기다려 주세요…'],
     book:  ['이야기를 시작하고 있어요…', '첫 번째 그림을 그려요…', '조금만 더 기다려 주세요…', '거의 다 됐어요…'],
     booknext: ['다음 이야기를 생각하고 있어요…', '같은 주인공을 그려요…', '다음 장면을 그려요…', '거의 다 됐어요…'],
+    bookdone: ['장면에 자막을 넣고 있어요…', '책을 묶고 있어요…', '거의 다 됐어요…'],
     story: ['고른 것을 모으고 있어요…', '이야기를 짓고 있어요…', '문장을 다듬고 있어요…', '거의 다 됐어요…']
   };
 
@@ -995,14 +996,26 @@ const App = (() => {
     ]);
   }
 
-  function finishBook() {
+  /* 책 완성하기 —
+     화면에서는 그림 위에 자막을 얹어 보여 주지만, 파일로 저장하면 그 자막이 남지 않습니다.
+     그래서 완성할 때 저장용 그림을 따로 만들어 자막을 그림 안에 새겨 넣습니다.
+     (화면에 보이는 그림은 자막이 두 번 겹치지 않도록 원래 그림 그대로 씁니다.) */
+  async function finishBook() {
     Speech.stop();
-    ctx.result = {
-      kind: 'book',
-      blobs: ctx.pages.map(p => p.blob),
-      texts: ctx.pages.map(p => p.text)
-    };
-    ctx.story = ctx.pages.map(p => p.text).join(' ');
+    const texts = ctx.pages.map(p => p.text);
+    const raw = ctx.pages.map(p => p.blob);
+
+    screenMaking('bookdone');
+    let saveBlobs;
+    try {
+      saveBlobs = await Promise.all(ctx.pages.map(p => UI.captionImage(p.blob, p.text)));
+    } catch (_) {
+      saveBlobs = raw;          // 자막을 못 넣어도 저장은 되도록
+    }
+    stopMaking();
+
+    ctx.result = { kind: 'book', blobs: raw, texts: texts, saveBlobs: saveBlobs };
+    ctx.story = texts.join(' ');
     ctx.savedId = null;
     Store.beep('done');
     screenResult();
@@ -1130,11 +1143,17 @@ const App = (() => {
     const isStory = r.kind === 'story';
     const urls = r.blobs.map(b => URL.createObjectURL(b));
 
-    /* 이야기 만들기는 글자가 곧 결과물이라 파일을 그때그때 만듭니다. */
+    /* 저장·보내기에 쓰는 파일
+       · 이야기 만들기는 글자가 곧 결과물이라 파일을 그때그때 만듭니다.
+       · 그림책은 자막을 새겨 넣은 그림(saveBlobs)으로 저장합니다. */
     function outputBlobs() {
-      if (!isStory) return r.blobs;
-      const text = (ctx.title ? ctx.title + '\n\n' : '') + (ctx.story || '') + '\n\n— ' + UI.todayText();
-      return [new Blob([text], { type: 'text/plain;charset=utf-8' })];
+      if (isStory) {
+        const text = (ctx.title ? ctx.title + '\n\n' : '') + (ctx.story || '') + '\n\n— ' + UI.todayText();
+        return [new Blob([text], { type: 'text/plain;charset=utf-8' })];
+      }
+      return (r.kind === 'book' && r.saveBlobs && r.saveBlobs.length === r.blobs.length)
+        ? r.saveBlobs
+        : r.blobs;
     }
 
     /* --- 결과물 --- */
@@ -1326,6 +1345,10 @@ const App = (() => {
       r.kind === 'book'
         ? el('p', { class: 'field__hint', style: 'text-align:center;',
                     text: '💡 장면을 누르면 크게 볼 수 있어요. 큰 화면에서 “◀ 앞 장면 · 다음 장면 ▶”으로 한 컷씩 넘겨 볼 수 있어요.' })
+        : null,
+      r.kind === 'book'
+        ? el('p', { class: 'field__hint', style: 'text-align:center;',
+                    text: '💡 저장하거나 보내는 그림에는 자막이 함께 들어가요. 화면에서 보는 그대로 남아요.' })
         : null,
       (r.kind === 'image' || r.kind === 'book')
         ? el('p', { class: 'field__hint', style: 'text-align:center;',
