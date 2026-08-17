@@ -879,12 +879,37 @@ const App = (() => {
     renderBook(extra, ctx.nextChoices, true);
   }
 
+  /* 그림책 장면 한 컷 —
+     ① 그림 아래쪽에 영화 자막처럼 줄거리 문구가 흰 바탕·검은 글씨로 붙고,
+     ② 누르면 큰 화면으로 한 컷씩 볼 수 있습니다. */
+  function sceneFrame(scene, i, showNumber) {
+    return el('span', { class: 'scene-frame' }, [
+      el('img', { src: scene.url, alt: '' }),
+      showNumber ? el('span', { class: 'scene-no', 'aria-hidden': 'true', text: String(i + 1) }) : null,
+      scene.text ? el('span', { class: 'scene-cap', text: scene.text }) : null
+    ]);
+  }
+
+  function sceneCard(scenes, i) {
+    const s = scenes[i];
+    const b = el('button', {
+      type: 'button', class: 'book-page',
+      'aria-label': `${i + 1}번째 장면. ${s.text || ''} 누르면 크게 볼 수 있어요.`
+    }, [
+      sceneFrame(s, i, true),
+      el('span', { class: 'book-page__hint', text: '눌러서 크게 보기 🔍' })
+    ]);
+    b.addEventListener('click', () => { Store.beep('tap'); Panels.openSceneViewer(scenes, i); });
+    return b;
+  }
+
+  function sceneGrid(scenes) {
+    return el('div', { class: 'book-pages' }, scenes.map((_, i) => sceneCard(scenes, i)));
+  }
+
   function bookStrip() {
-    return el('div', { class: 'book-pages' }, ctx.pages.map((p, i) =>
-      el('div', { class: 'book-page' }, [
-        el('img', { src: p.url, alt: `${i + 1}번째 장면` }),
-        el('p', { text: `${i + 1}. ${p.text}` })
-      ])));
+    const scenes = ctx.pages.map(p => ({ url: p.url, text: p.text }));
+    return sceneGrid(scenes);
   }
 
   function renderBook(extra, choices, ready) {
@@ -920,15 +945,13 @@ const App = (() => {
                full ? '책이 가득 찼어요. 이제 완성해 보세요.' : '이어질 이야기를 골라 한 장씩 늘려 가요.'),
 
       last ? el('div', { class: 'result-stage' }, [
-        el('img', { src: last.url, alt: `${n}번째 장면` })
+        sceneFrame({ url: last.url, text: last.text }, n - 1, n > 1)
       ]) : null,
 
-      last ? el('div', { class: 'story-box' }, [
-        el('p', { text: `${n}. ${last.text}` }),
-        Speech.supported ? el('div', { class: 'actions', style: 'margin-top:12px;' }, [
-          UI.btn('🔊 읽어주기', { kind: 'mint', onClick: () => Speech.speak(last.text) }),
-          UI.btn('⏹ 그만 듣기', { onClick: () => Speech.stop() })
-        ]) : null
+      (last && Speech.supported) ? el('div', { class: 'actions' }, [
+        UI.btn('🔊 읽어주기', { kind: 'mint', ariaLabel: `${n}번째 장면 이야기 읽어주기`,
+                                onClick: () => Speech.speak(last.text) }),
+        UI.btn('⏹ 그만 듣기', { onClick: () => Speech.stop() })
       ]) : null,
 
       n > 1 ? el('div', {}, [
@@ -1129,11 +1152,9 @@ const App = (() => {
         el('audio', { src: urls[0], controls: true, 'aria-label': '내가 만든 노래' })
       ]);
     } else {
-      stageInner = el('div', { class: 'book-pages' }, urls.map((u, i) =>
-        el('div', { class: 'book-page' }, [
-          el('img', { src: u, alt: `${i + 1}번째 장면` }),
-          el('p', { text: (r.texts && r.texts[i]) || '' })
-        ])));
+      // 그림책 — 장면마다 자막이 붙고, 누르면 큰 화면으로 한 컷씩 볼 수 있습니다.
+      const scenes = urls.map((u, i) => ({ url: u, text: (r.texts && r.texts[i]) || '' }));
+      stageInner = sceneGrid(scenes);
     }
 
     /* --- 이름 붙이기 --- */
@@ -1302,6 +1323,10 @@ const App = (() => {
         keepBtn
       ]),
       saveMsg,
+      r.kind === 'book'
+        ? el('p', { class: 'field__hint', style: 'text-align:center;',
+                    text: '💡 장면을 누르면 크게 볼 수 있어요. 큰 화면에서 “◀ 앞 장면 · 다음 장면 ▶”으로 한 컷씩 넘겨 볼 수 있어요.' })
+        : null,
       (r.kind === 'image' || r.kind === 'book')
         ? el('p', { class: 'field__hint', style: 'text-align:center;',
                     text: '💡 그림을 길게 누르면 “이미지 저장”으로도 사진 앱에 담을 수 있어요.' })
