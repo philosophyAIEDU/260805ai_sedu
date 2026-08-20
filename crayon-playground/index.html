@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#EFF5EE" />
+<title>크레용 놀이터</title>
+<meta name="description" content="색칠하기·자유그리기·도장놀이·대칭그리기·점묘화·악기그리기·따라그리기·협동색칠, 소리와 함께 즐기는 아이들 미술 놀이터" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🖍️</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #EFF5EE;
+    --surface: #FFFFFF;
+    --paper: #FFFBF2;
+    --ink: #26332C;
+    --ink-soft: #5C6F65;
+    --accent: #FF6F59;
+    --accent-ink: #FFFFFF;
+    --accent-2: #FFB627;
+    --accent-3: #4EA8DE;
+    --line: #DCE7D9;
+    --shadow: 0 14px 30px -16px rgba(38,51,44,0.32);
+    --radius-lg: 28px;
+    --radius-md: 18px;
+    --radius-sm: 12px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14201B;
+      --surface: #1E2B24;
+      --paper: #24322A;
+      --ink: #ECF3EC;
+      --ink-soft: #A7C0AE;
+      --accent: #FF8468;
+      --accent-ink: #1B1512;
+      --accent-2: #FFC857;
+      --accent-3: #6FC1F2;
+      --line: #32463A;
+      --shadow: 0 14px 30px -16px rgba(0,0,0,0.55);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #14201B;
+    --surface: #1E2B24;
+    --paper: #24322A;
+    --ink: #ECF3EC;
+    --ink-soft: #A7C0AE;
+    --accent: #FF8468;
+    --accent-ink: #1B1512;
+    --accent-2: #FFC857;
+    --accent-3: #6FC1F2;
+    --line: #32463A;
+    --shadow: 0 14px 30px -16px rgba(0,0,0,0.55);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-tap-highlight-color: transparent; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Gowun Dodum', 'Apple SD Gothic Neo', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    touch-action: manipulation;
+  }
+
+  h1, h2, .display {
+    font-family: 'Do Hyeon', 'Trebuchet MS', sans-serif;
+    font-weight: 400;
+    text-wrap: balance;
+  }
+
+  button { font-family: inherit; -webkit-tap-highlight-color: transparent; }
+
+  :focus-visible { outline: 3px solid var(--accent-3); outline-offset: 2px; }
+
+  .app {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: clamp(12px, 2.5vw, 28px);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(14px, 2vw, 22px);
+  }
+
+  /* ---------- App bar ---------- */
+  .appbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 12px 18px;
+    box-shadow: var(--shadow);
+  }
+
+  .brand { display: flex; align-items: center; gap: 10px; margin-right: auto; }
+  .brand-icon { font-size: 2rem; line-height: 1; }
+  .brand h1 { margin: 0; font-size: clamp(1.3rem, 2.6vw, 1.7rem); letter-spacing: 0.01em; }
+
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .tab-btn {
+    display: flex; align-items: center; gap: 6px;
+    border: 2px solid var(--line); background: var(--bg); color: var(--ink);
+    border-radius: 999px; padding: 9px 16px 9px 12px; font-size: 1rem; cursor: pointer;
+    transition: transform .15s ease, background .15s ease, border-color .15s ease;
+  }
+  .tab-btn .ic { font-size: 1.2rem; }
+  .tab-btn:hover { transform: translateY(-1px); }
+  .tab-btn[aria-selected="true"] {
+    background: var(--accent); color: var(--accent-ink); border-color: var(--accent);
+    font-family: 'Do Hyeon', sans-serif;
+  }
+
+  .icon-btn {
+    border: 2px solid var(--line); background: var(--bg); color: var(--ink);
+    border-radius: 999px; width: 44px; height: 44px; font-size: 1.2rem;
+    cursor: pointer; display: grid; place-items: center; text-decoration: none;
+  }
+
+  /* ---------- Panels ---------- */
+  .panel { display: flex; flex-direction: column; gap: 14px; }
+  .panel[hidden] { display: none; }
+
+  .hint { margin: 0; color: var(--ink-soft); font-size: 0.98rem; }
+
+  .picture-picker { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .pic-btn {
+    border: 2px solid var(--line); background: var(--surface); border-radius: var(--radius-md);
+    padding: 8px 14px; display: flex; align-items: center; gap: 8px; cursor: pointer;
+    font-size: 1rem; color: var(--ink);
+  }
+  .pic-btn .ic { font-size: 1.4rem; }
+  .pic-btn[aria-pressed="true"] {
+    border-color: var(--accent-2);
+    background: color-mix(in srgb, var(--accent-2) 20%, var(--surface));
+    font-family: 'Do Hyeon', sans-serif;
+  }
+
+  .turn-banner {
+    align-self: flex-start;
+    border: 2px solid var(--accent);
+    background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+    border-radius: 999px;
+    padding: 8px 18px;
+    font-family: 'Do Hyeon', sans-serif;
+    font-size: 1.05rem;
+  }
+
+  .workspace { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width: 880px) { .workspace { grid-template-columns: 1fr 300px; align-items: start; } }
+
+  .stage-wrap {
+    background: var(--surface); border-radius: var(--radius-lg); padding: clamp(10px, 2vw, 20px);
+    box-shadow: var(--shadow); display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+
+  .stage {
+    width: 100%; max-width: 560px; aspect-ratio: 1 / 1; background: var(--paper);
+    border-radius: var(--radius-md); overflow: hidden; display: block; border: 2px solid var(--line);
+  }
+
+  svg.stage-svg { width: 100%; height: 100%; display: block; cursor: pointer; }
+  svg.stage-svg[hidden] { display: none; }
+  .fillable { transition: fill .08s ease; }
+  .fillable:hover { filter: brightness(0.96); }
+
+  canvas.stage-canvas { width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
+
+  .progress { font-size: 0.92rem; color: var(--ink-soft); }
+
+  .tray {
+    background: var(--surface); border-radius: var(--radius-lg); padding: 16px;
+    box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 16px;
+  }
+
+  .tray-section h2 {
+    margin: 0 0 8px; font-size: 1.05rem; color: var(--ink-soft);
+    font-family: 'Gowun Dodum', sans-serif; font-weight: 700;
+  }
+
+  .swatches { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+  @media (min-width: 880px) { .swatches { grid-template-columns: repeat(4, 1fr); } }
+
+  .swatch {
+    width: 100%; aspect-ratio: 1/1; border-radius: 50%; border: 3px solid var(--line);
+    cursor: pointer; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.35);
+  }
+  .swatch[aria-pressed="true"] {
+    border-color: var(--ink); transform: scale(1.12); box-shadow: 0 0 0 3px var(--accent-2);
+  }
+
+  .size-row, .stamp-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .size-btn {
+    border: 2px solid var(--line); background: var(--bg); border-radius: var(--radius-sm);
+    width: 52px; height: 52px; display: grid; place-items: center; cursor: pointer;
+    font-family: 'Do Hyeon', sans-serif; font-size: 1.05rem; color: var(--ink);
+  }
+  .size-btn .dot { border-radius: 50%; background: var(--ink); }
+  .size-btn[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--bg)); }
+
+  .stamp-btn {
+    border: 2px solid var(--line); background: var(--bg); border-radius: var(--radius-sm);
+    width: 54px; height: 54px; font-size: 1.6rem; display: grid; place-items: center; cursor: pointer;
+  }
+  .stamp-btn[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, var(--bg)); }
+
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .btn {
+    border: none; border-radius: 999px; padding: 12px 18px; font-size: 1rem; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px; font-family: 'Do Hyeon', sans-serif;
+  }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); }
+  .btn-ghost { background: var(--bg); color: var(--ink); border: 2px solid var(--line); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn:active { transform: translateY(1px); }
+
+  /* ---------- Toast ---------- */
+  .toast {
+    position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 12px);
+    background: var(--ink); color: var(--paper); padding: 12px 20px; border-radius: 999px;
+    font-size: 0.98rem; opacity: 0; pointer-events: none; transition: opacity .25s ease, transform .25s ease;
+    z-index: 50; box-shadow: var(--shadow); max-width: 90vw; text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  /* ---------- Confetti ---------- */
+  #confetti-layer { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 40; }
+  .confetto { position: absolute; top: -20px; width: 10px; height: 14px; border-radius: 3px; animation: confetti-fall linear forwards; }
+  @keyframes confetti-fall { to { transform: translateY(110vh) rotate(540deg); opacity: 0.9; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .confetto { animation: none; display: none; }
+    * { transition-duration: 0.01ms !important; }
+  }
+
+  footer.credit { text-align: center; color: var(--ink-soft); font-size: 0.85rem; padding: 6px 0 2px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="appbar">
+    <a class="icon-btn" href="../index.html" aria-label="처음 화면으로 가기" title="처음 화면으로">🏠</a>
+    <div class="brand">
+      <span class="brand-icon" aria-hidden="true">🖍️</span>
+      <h1>크레용 놀이터</h1>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="미술 활동 고르기">
+      <button class="tab-btn" role="tab" data-tab="color" aria-selected="true"><span class="ic">🎨</span>색칠하기</button>
+      <button class="tab-btn" role="tab" data-tab="draw" aria-selected="false"><span class="ic">✏️</span>자유그리기</button>
+      <button class="tab-btn" role="tab" data-tab="stamp" aria-selected="false"><span class="ic">⭐</span>도장놀이</button>
+      <button class="tab-btn" role="tab" data-tab="symmetry" aria-selected="false"><span class="ic">🌀</span>대칭그리기</button>
+      <button class="tab-btn" role="tab" data-tab="dot" aria-selected="false"><span class="ic">🔵</span>점묘화</button>
+      <button class="tab-btn" role="tab" data-tab="music" aria-selected="false"><span class="ic">🎵</span>악기그리기</button>
+      <button class="tab-btn" role="tab" data-tab="trace" aria-selected="false"><span class="ic">✍️</span>따라그리기</button>
+      <button class="tab-btn" role="tab" data-tab="coop" aria-selected="false"><span class="ic">🤝</span>협동색칠</button>
+    </nav>
+    <button id="soundToggle" class="icon-btn" aria-pressed="true" aria-label="소리 켜기/끄기" title="소리 켜기/끄기">🔊</button>
+  </header>
+
+  <main>
+    <!-- ===================== COLORING PANEL ===================== -->
+    <section id="panel-color" class="panel" data-panel role="tabpanel">
+      <p class="hint">그림을 고르고, 칸을 콕 눌러서 색칠해보세요!</p>
+      <div class="picture-picker" id="colorPicPicker" role="group" aria-label="그림 고르기">
+        <button class="pic-btn" data-pic="flower" aria-pressed="true"><span class="ic">🌸</span>꽃</button>
+        <button class="pic-btn" data-pic="car" aria-pressed="false"><span class="ic">🚗</span>자동차</button>
+        <button class="pic-btn" data-pic="cloud" aria-pressed="false"><span class="ic">☁️</span>구름</button>
+        <button class="pic-btn" data-pic="fish" aria-pressed="false"><span class="ic">🐠</span>물고기</button>
+        <button class="pic-btn" data-pic="butterfly" aria-pressed="false"><span class="ic">🦋</span>나비</button>
+        <button class="pic-btn" data-pic="house" aria-pressed="false"><span class="ic">🏠</span>집</button>
+        <button class="pic-btn" data-pic="rainbow" aria-pressed="false"><span class="ic">🌈</span>무지개</button>
+      </div>
+
+      <div class="workspace">
+        <div class="stage-wrap">
+          <div class="stage" id="colorStage">
+            <!-- FLOWER -->
+            <svg class="stage-svg" data-pic="flower" viewBox="0 0 480 480" xmlns="http://www.w3.org/2000/svg">
+              <path class="fillable" d="M175,430 L305,430 L288,368 L192,368 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="7" stroke-linejoin="round"/>
+              <path class="fillable" d="M226,300 C185,292 160,312 155,340 C190,345 224,325 226,300 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="7" stroke-linejoin="round"/>
+              <path class="fillable" d="M254,318 C295,308 320,328 326,352 C292,360 258,342 254,318 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="7" stroke-linejoin="round"/>
+              <path class="fillable" d="M228,378 C226,320 226,260 232,205 C233,197 247,197 248,205 C254,260 254,320 252,378 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="7" stroke-linejoin="round"/>
+              <ellipse class="fillable" cx="240" cy="115" rx="32" ry="60" transform="rotate(0 240 190)" fill="#FFFFFF" stroke="#26332C" stroke-width="7"/>
+              <ellipse class="fillable" cx="240" cy="115" rx="32" ry="60" transform="rotate(60 240 190)" fill="#FFFFFF" stroke="#26332C" stroke-width="7"/>
+              <ellipse class="fillable" cx="240" cy="115" rx="32" ry="60" transform="rotate(120 240 190)" fill="#FFFFFF" stroke="#26332C" stroke-width="7"/>
+              <ellipse class="fillable" cx="240" cy="115" rx="32" ry="60" transform="rotate(180 240 190)" fill="#FFFFFF" stroke="#26332C" stroke-width="7"/>
+              <ellipse class="fillable" cx="240" cy="115" rx="32" ry="60" transform="rotate(240 240 190)" fill="#FFFFFF" stroke="#26332C" stroke-width="7"/>
+              <ellipse class="fillable" cx="240" cy="115" rx="32" ry="60" transform="rotate(300 240 190)" fill="#FFFFFF" stroke="#26332C" stroke-width="7"/>
+              <circle class="fillable" cx="240" cy="190" r="40" fill="#FFFFFF" stroke="#26332C" stroke-width="7"/>
+            </svg>
+            <!-- CAR -->
+            <svg class="stage-svg" data-pic="car" viewBox="0 0 480 480" xmlns="http://www.w3.org/2000/svg" hidden>
+              <rect class="fillable" x="70" y="230" width="340" height="110" rx="28" fill="#FFFFFF" stroke="#26332C" stroke-width="7"/>
+              <path class="fillable" d="M150,230 L190,150 L300,150 L330,230 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="7" stroke-linejoin="round"/>
+              <path class="fillable" d="M160,225 L195,160 L238,160 L238,225 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="6" stroke-linejoin="round"/>
+              <path class="fillable" d="M242,225 L242,160 L285,160 L320,225 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="6" stroke-linejoin="round"/>
+              <rect class="fillable" x="402" y="288" width="26" height="38" rx="10" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+              <rect class="fillable" x="44" y="288" width="26" height="38" rx="10" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+              <circle class="fillable" cx="393" cy="270" r="14" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+              <circle class="fillable" cx="150" cy="345" r="45" fill="#FFFFFF" stroke="#26332C" stroke-width="7"/>
+              <circle class="fillable" cx="330" cy="345" r="45" fill="#FFFFFF" stroke="#26332C" stroke-width="7"/>
+              <circle class="fillable" cx="150" cy="345" r="17" fill="#FFFFFF" stroke="#26332C" stroke-width="5"/>
+              <circle class="fillable" cx="330" cy="345" r="17" fill="#FFFFFF" stroke="#26332C" stroke-width="5"/>
+              <line x1="240" y1="230" x2="240" y2="340" stroke="#26332C" stroke-width="5"/>
+            </svg>
+            <!-- CLOUD -->
+            <svg class="stage-svg" data-pic="cloud" viewBox="0 0 480 480" xmlns="http://www.w3.org/2000/svg" hidden>
+              <rect class="fillable" x="0" y="0" width="480" height="480" fill="#FFFFFF" stroke="none"/>
+              <path class="fillable" d="M0,430 C90,395 170,420 250,405 C330,390 410,415 480,398 L480,480 L0,480 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="7" stroke-linejoin="round"/>
+              <circle class="fillable" cx="390" cy="95" r="45" fill="#FFFFFF" stroke="#26332C" stroke-width="7"/>
+              <g stroke="#26332C" stroke-width="6" stroke-linecap="round" fill="none">
+                <line x1="445" y1="95" x2="462" y2="95"/>
+                <line x1="429" y1="56" x2="441" y2="44"/>
+                <line x1="390" y1="40" x2="390" y2="23"/>
+                <line x1="351" y1="56" x2="339" y2="44"/>
+                <line x1="335" y1="95" x2="318" y2="95"/>
+                <line x1="351" y1="134" x2="339" y2="146"/>
+                <line x1="390" y1="150" x2="390" y2="167"/>
+                <line x1="429" y1="134" x2="441" y2="146"/>
+              </g>
+              <path class="fillable" d="M40,95 C30,95 25,80 35,73 C32,60 50,53 60,63 C72,53 88,63 82,77 C92,80 88,97 75,95 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="6" stroke-linejoin="round"/>
+              <path class="fillable" d="M150,60 C140,60 135,45 145,38 C142,25 160,18 170,28 C182,18 198,28 192,42 C202,45 198,62 185,60 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="6" stroke-linejoin="round"/>
+              <path class="fillable" d="M100,260 C68,260 52,228 68,203 C56,172 92,146 124,158 C132,116 190,104 217,136 C248,104 305,116 308,158 C344,152 376,180 364,216 C390,226 388,268 356,278 C356,304 322,314 296,302 L128,302 C90,308 68,286 100,260 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="7" stroke-linejoin="round"/>
+              <g stroke="#26332C" stroke-width="5" stroke-linecap="round" fill="none">
+                <path d="M60,130 q8,-14 16,0 q8,-14 16,0"/>
+                <path d="M300,60 q7,-12 14,0 q7,-12 14,0"/>
+              </g>
+            </svg>
+            <!-- FISH -->
+            <svg class="stage-svg" data-pic="fish" viewBox="0 0 480 480" xmlns="http://www.w3.org/2000/svg" hidden>
+              <path class="fillable" d="M120,240 L60,190 L60,290 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="7" stroke-linejoin="round"/>
+              <path class="fillable" d="M120,240 C120,170 190,130 260,140 C330,150 380,190 400,240 C380,290 330,330 260,340 C190,350 120,310 120,240 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="7" stroke-linejoin="round"/>
+              <path class="fillable" d="M225,142 L250,95 L285,145 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="6" stroke-linejoin="round"/>
+              <path class="fillable" d="M225,338 L250,385 L285,335 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="6" stroke-linejoin="round"/>
+              <circle class="fillable" cx="340" cy="210" r="16" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+              <circle cx="344" cy="210" r="6" fill="#26332C" stroke="none"/>
+              <circle class="fillable" cx="420" cy="140" r="10" fill="#FFFFFF" stroke="#26332C" stroke-width="5"/>
+              <circle class="fillable" cx="440" cy="112" r="6" fill="#FFFFFF" stroke="#26332C" stroke-width="4"/>
+              <path d="M300,190 q22,50 0,100" stroke="#26332C" stroke-width="5" stroke-linecap="round" fill="none"/>
+            </svg>
+            <!-- BUTTERFLY -->
+            <svg class="stage-svg" data-pic="butterfly" viewBox="0 0 480 480" xmlns="http://www.w3.org/2000/svg" hidden>
+              <path class="fillable" d="M222,180 C160,120 70,140 60,210 C55,260 120,270 170,240 C200,225 218,200 222,180 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="7" stroke-linejoin="round"/>
+              <path class="fillable" d="M258,180 C320,120 410,140 420,210 C425,260 360,270 310,240 C280,225 262,200 258,180 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="7" stroke-linejoin="round"/>
+              <path class="fillable" d="M222,220 C170,230 110,270 100,320 C95,360 150,380 190,350 C210,335 220,270 222,220 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="7" stroke-linejoin="round"/>
+              <path class="fillable" d="M258,220 C310,230 370,270 380,320 C385,360 330,380 290,350 C270,335 260,270 258,220 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="7" stroke-linejoin="round"/>
+              <circle class="fillable" cx="130" cy="195" r="16" fill="#FFFFFF" stroke="#26332C" stroke-width="5"/>
+              <circle class="fillable" cx="350" cy="195" r="16" fill="#FFFFFF" stroke="#26332C" stroke-width="5"/>
+              <path class="fillable" d="M232,120 C226,120 222,130 222,150 L222,330 C222,350 226,360 232,360 L248,360 C254,360 258,350 258,330 L258,150 C258,130 254,120 248,120 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="6" stroke-linejoin="round"/>
+              <g stroke="#26332C" stroke-width="5" stroke-linecap="round" fill="none">
+                <path d="M232,120 C226,100 210,90 195,85"/>
+                <path d="M248,120 C254,100 270,90 285,85"/>
+              </g>
+              <circle cx="195" cy="85" r="6" fill="#26332C" stroke="none"/>
+              <circle cx="285" cy="85" r="6" fill="#26332C" stroke="none"/>
+            </svg>
+            <!-- HOUSE -->
+            <svg class="stage-svg" data-pic="house" viewBox="0 0 480 480" xmlns="http://www.w3.org/2000/svg" hidden>
+              <rect class="fillable" x="0" y="400" width="480" height="80" fill="#FFFFFF" stroke="none"/>
+              <circle class="fillable" cx="430" cy="260" r="40" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+              <rect class="fillable" x="420" y="300" width="20" height="60" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+              <rect class="fillable" x="110" y="220" width="260" height="180" fill="#FFFFFF" stroke="#26332C" stroke-width="7"/>
+              <path class="fillable" d="M80,220 L240,100 L400,220 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="7" stroke-linejoin="round"/>
+              <rect class="fillable" x="310" y="120" width="36" height="70" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+              <rect class="fillable" x="140" y="250" width="50" height="50" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+              <rect class="fillable" x="290" y="250" width="50" height="50" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+              <g stroke="#26332C" stroke-width="4" fill="none">
+                <line x1="165" y1="250" x2="165" y2="300"/>
+                <line x1="140" y1="275" x2="190" y2="275"/>
+                <line x1="315" y1="250" x2="315" y2="300"/>
+                <line x1="290" y1="275" x2="340" y2="275"/>
+              </g>
+              <rect class="fillable" x="215" y="310" width="50" height="90" rx="6" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+              <circle cx="252" cy="355" r="5" fill="#26332C" stroke="none"/>
+            </svg>
+            <!-- RAINBOW -->
+            <svg class="stage-svg" data-pic="rainbow" viewBox="0 0 480 480" xmlns="http://www.w3.org/2000/svg" hidden>
+              <rect class="fillable" x="0" y="0" width="480" height="480" fill="#FFFFFF" stroke="none"/>
+              <circle class="fillable" cx="400" cy="80" r="38" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+              <path class="fillable" d="M60,90 C50,90 45,75 55,68 C52,55 70,48 80,58 C92,48 108,58 102,72 C112,75 108,92 95,90 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="5" stroke-linejoin="round"/>
+              <rect class="fillable" x="0" y="440" width="480" height="40" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+              <path class="fillable" d="M20,440 A220,220 0 0 1 460,440 L436,440 A196,196 0 0 0 44,440 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="5" stroke-linejoin="round"/>
+              <path class="fillable" d="M44,440 A196,196 0 0 1 436,440 L412,440 A172,172 0 0 0 68,440 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="5" stroke-linejoin="round"/>
+              <path class="fillable" d="M68,440 A172,172 0 0 1 412,440 L388,440 A148,148 0 0 0 92,440 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="5" stroke-linejoin="round"/>
+              <path class="fillable" d="M92,440 A148,148 0 0 1 388,440 L364,440 A124,124 0 0 0 116,440 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="5" stroke-linejoin="round"/>
+              <path class="fillable" d="M116,440 A124,124 0 0 1 364,440 L340,440 A100,100 0 0 0 140,440 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="5" stroke-linejoin="round"/>
+              <path class="fillable" d="M140,440 A100,100 0 0 1 340,440 L316,440 A76,76 0 0 0 164,440 Z" fill="#FFFFFF" stroke="#26332C" stroke-width="5" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <p class="progress" id="colorProgress">0 / 11칸 색칠했어요</p>
+        </div>
+
+        <div class="tray">
+          <div class="tray-section">
+            <h2>색깔 고르기</h2>
+            <div class="swatches" id="colorSwatches" role="group" aria-label="색깔 고르기"></div>
+          </div>
+          <div class="tray-section actions">
+            <button class="btn btn-ghost" id="colorReset">🔄 다시 칠하기</button>
+            <button class="btn btn-primary" id="colorSave">💾 저장하기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== FREE DRAW PANEL ===================== -->
+    <section id="panel-draw" class="panel" data-panel role="tabpanel" hidden>
+      <p class="hint">손가락으로 자유롭게 쓱쓱 그려보세요!</p>
+      <div class="workspace">
+        <div class="stage-wrap">
+          <div class="stage" id="drawStage"><canvas class="stage-canvas" id="drawCanvas" width="960" height="960"></canvas></div>
+        </div>
+        <div class="tray">
+          <div class="tray-section">
+            <h2>색깔 고르기</h2>
+            <div class="swatches" id="drawSwatches" role="group" aria-label="색깔 고르기"></div>
+          </div>
+          <div class="tray-section">
+            <h2>굵기</h2>
+            <div class="size-row" role="group" aria-label="붓 굵기">
+              <button class="size-btn" data-size="6" aria-pressed="false" aria-label="가는 붓"><span class="dot" style="width:8px;height:8px"></span></button>
+              <button class="size-btn" data-size="16" aria-pressed="true" aria-label="중간 붓"><span class="dot" style="width:16px;height:16px"></span></button>
+              <button class="size-btn" data-size="30" aria-pressed="false" aria-label="굵은 붓"><span class="dot" style="width:28px;height:28px"></span></button>
+              <button class="size-btn" id="eraserBtn" data-size="34" aria-pressed="false" aria-label="지우개">🧽</button>
+            </div>
+          </div>
+          <div class="tray-section actions">
+            <button class="btn btn-ghost" id="drawClear">🔄 지우기</button>
+            <button class="btn btn-primary" id="drawSave">💾 저장하기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== STAMP PANEL ===================== -->
+    <section id="panel-stamp" class="panel" data-panel role="tabpanel" hidden>
+      <p class="hint">도장을 고르고 화면을 콕콕 눌러서 찍어보세요!</p>
+      <div class="workspace">
+        <div class="stage-wrap">
+          <div class="stage" id="stampStage"><canvas class="stage-canvas" id="stampCanvas" width="960" height="960"></canvas></div>
+        </div>
+        <div class="tray">
+          <div class="tray-section">
+            <h2>도장 고르기</h2>
+            <div class="stamp-row" id="stampButtons" role="group" aria-label="도장 고르기"></div>
+          </div>
+          <div class="tray-section">
+            <h2>배경 색칠하기</h2>
+            <div class="swatches" id="stampSwatches" role="group" aria-label="배경 색깔"></div>
+          </div>
+          <div class="tray-section actions">
+            <button class="btn btn-ghost" id="stampClear">🔄 지우기</button>
+            <button class="btn btn-primary" id="stampSave">💾 저장하기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== SYMMETRY / MANDALA PANEL ===================== -->
+    <section id="panel-symmetry" class="panel" data-panel role="tabpanel" hidden>
+      <p class="hint">한쪽에 그리면 반대쪽에도 똑같이 나타나요. 신기한 요술 그림이에요!</p>
+      <div class="workspace">
+        <div class="stage-wrap">
+          <div class="stage" id="symStage"><canvas class="stage-canvas" id="symCanvas" width="960" height="960"></canvas></div>
+        </div>
+        <div class="tray">
+          <div class="tray-section">
+            <h2>색깔 고르기</h2>
+            <div class="swatches" id="symSwatches" role="group" aria-label="색깔 고르기"></div>
+          </div>
+          <div class="tray-section">
+            <h2>몇 조각으로 반짝일까요?</h2>
+            <div class="size-row" role="group" aria-label="대칭 조각 수">
+              <button class="size-btn sym-count-btn" data-count="2" aria-pressed="false">2</button>
+              <button class="size-btn sym-count-btn" data-count="4" aria-pressed="false">4</button>
+              <button class="size-btn sym-count-btn" data-count="6" aria-pressed="true">6</button>
+              <button class="size-btn sym-count-btn" data-count="10" aria-pressed="false">10</button>
+            </div>
+          </div>
+          <div class="tray-section actions">
+            <button class="btn btn-ghost" id="symClear">🔄 지우기</button>
+            <button class="btn btn-primary" id="symSave">💾 저장하기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== POINTILLISM PANEL ===================== -->
+    <section id="panel-dot" class="panel" data-panel role="tabpanel" hidden>
+      <p class="hint">콕콕 점을 찍어서 그림을 완성해요!</p>
+      <div class="workspace">
+        <div class="stage-wrap">
+          <div class="stage" id="dotStage"><canvas class="stage-canvas" id="dotCanvas" width="960" height="960"></canvas></div>
+        </div>
+        <div class="tray">
+          <div class="tray-section">
+            <h2>색깔 고르기</h2>
+            <div class="swatches" id="dotSwatches" role="group" aria-label="색깔 고르기"></div>
+          </div>
+          <div class="tray-section">
+            <h2>점 크기</h2>
+            <div class="size-row" role="group" aria-label="점 크기">
+              <button class="size-btn dot-size-btn" data-size="7" aria-pressed="false"><span class="dot" style="width:8px;height:8px"></span></button>
+              <button class="size-btn dot-size-btn" data-size="13" aria-pressed="true"><span class="dot" style="width:16px;height:16px"></span></button>
+              <button class="size-btn dot-size-btn" data-size="22" aria-pressed="false"><span class="dot" style="width:26px;height:26px"></span></button>
+            </div>
+          </div>
+          <div class="tray-section actions">
+            <button class="btn btn-ghost" id="dotClear">🔄 지우기</button>
+            <button class="btn btn-primary" id="dotSave">💾 저장하기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== MUSIC DRAWING PANEL ===================== -->
+    <section id="panel-music" class="panel" data-panel role="tabpanel" hidden>
+      <p class="hint">손가락을 움직이면 그림도 그려지고 소리도 나요. 나만의 악기예요!</p>
+      <div class="workspace">
+        <div class="stage-wrap">
+          <div class="stage" id="musicStage"><canvas class="stage-canvas" id="musicCanvas" width="960" height="960"></canvas></div>
+        </div>
+        <div class="tray">
+          <div class="tray-section actions">
+            <button class="btn btn-ghost" id="musicClear">🔄 지우기</button>
+            <button class="btn btn-primary" id="musicSave">💾 저장하기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== TRACING PANEL ===================== -->
+    <section id="panel-trace" class="panel" data-panel role="tabpanel" hidden>
+      <p class="hint">점선을 따라 손가락으로 그어보세요. 다 그으면 소리로 칭찬해줘요!</p>
+      <div class="picture-picker" id="tracePicker" role="group" aria-label="모양 고르기">
+        <button class="pic-btn" data-shape="star" aria-pressed="true"><span class="ic">⭐</span>별</button>
+        <button class="pic-btn" data-shape="heart" aria-pressed="false"><span class="ic">❤️</span>하트</button>
+        <button class="pic-btn" data-shape="circle" aria-pressed="false"><span class="ic">⚪</span>동그라미</button>
+        <button class="pic-btn" data-shape="spiral" aria-pressed="false"><span class="ic">🌀</span>소용돌이</button>
+        <button class="pic-btn" data-shape="zigzag" aria-pressed="false"><span class="ic">〰️</span>지그재그</button>
+      </div>
+      <div class="workspace">
+        <div class="stage-wrap">
+          <div class="stage" id="traceStage"><canvas class="stage-canvas" id="traceCanvas" width="960" height="960"></canvas></div>
+        </div>
+        <div class="tray">
+          <div class="tray-section">
+            <h2>펜 색깔</h2>
+            <div class="swatches" id="traceSwatches" role="group" aria-label="펜 색깔"></div>
+          </div>
+          <div class="tray-section actions">
+            <button class="btn btn-ghost" id="traceClear">🔄 다시 하기</button>
+            <button class="btn btn-primary" id="traceSave">💾 저장하기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== COOPERATIVE COLORING PANEL ===================== -->
+    <section id="panel-coop" class="panel" data-panel role="tabpanel" hidden>
+      <p class="hint">둘이서 번갈아 가며 한 칸씩 색칠해요. 친구 차례를 기다려 줘요!</p>
+      <div class="turn-banner" id="turnBanner">1️⃣ 번 친구 차례예요!</div>
+      <div class="picture-picker" id="coopPicPicker" role="group" aria-label="그림 고르기"></div>
+      <div class="workspace">
+        <div class="stage-wrap">
+          <div class="stage" id="coopStage"></div>
+          <p class="progress" id="coopProgress">0 / 0칸 색칠했어요</p>
+        </div>
+        <div class="tray">
+          <div class="tray-section">
+            <h2>색깔 고르기</h2>
+            <div class="swatches" id="coopSwatches" role="group" aria-label="색깔 고르기"></div>
+          </div>
+          <div class="tray-section actions">
+            <button class="btn btn-ghost" id="coopReset">🔄 다시 칠하기</button>
+            <button class="btn btn-primary" id="coopSave">💾 저장하기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="credit">두 손가락이 아니라 한 손가락으로 콕! 눌러야 잘 그려져요 🖍️</footer>
+</div>
+
+<div class="toast" id="toast" aria-live="polite"></div>
+<div id="confetti-layer" aria-hidden="true"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ================= Crayon palette ================= */
+  var CRAYONS = [
+    {name:'빨강', hex:'#F14B4B'}, {name:'주황', hex:'#FF9142'},
+    {name:'노랑', hex:'#FFD23F'}, {name:'연두', hex:'#A8D45C'},
+    {name:'초록', hex:'#4CAF6D'}, {name:'민트', hex:'#3FC1A3'},
+    {name:'하늘', hex:'#4FB3E8'}, {name:'파랑', hex:'#3E6FD9'},
+    {name:'보라', hex:'#8E6FD1'}, {name:'자주', hex:'#C25CC7'},
+    {name:'분홍', hex:'#FF7EB9'}, {name:'갈색', hex:'#A9714B'},
+    {name:'검정', hex:'#3A3A3A'}, {name:'하양', hex:'#FFFFFF'}
+  ];
+  var PENTATONIC = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.5];
+
+  /* ================= Sound engine ================= */
+  var audioCtx = null, muted = (localStorage.getItem('crayon-muted') === '1');
+  function ensureAudio() {
+    if (!audioCtx) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AC();
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+  function playTone(opts) {
+    if (muted) return;
+    var ctx = ensureAudio();
+    var t0 = ctx.currentTime + (opts.delay || 0);
+    var osc = ctx.createOscillator();
+    var g = ctx.createGain();
+    osc.type = opts.type || 'sine';
+    osc.frequency.setValueAtTime(opts.freq, t0);
+    if (opts.sweepTo) osc.frequency.exponentialRampToValueAtTime(opts.sweepTo, t0 + opts.duration);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(opts.gain || 0.15, t0 + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + opts.duration);
+    osc.connect(g).connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + opts.duration + 0.03);
+  }
+  function playPop() {
+    playTone({ freq: PENTATONIC[Math.floor(Math.random() * PENTATONIC.length)], duration: 0.22, type: 'triangle', gain: 0.18 });
+  }
+  function playClick() { playTone({ freq: 1100, duration: 0.05, type: 'square', gain: 0.06 }); }
+  function playBoing(offset) {
+    var base = 300 + (offset || 0) * 18;
+    playTone({ freq: base, duration: 0.16, type: 'sine', gain: 0.2, sweepTo: base * 2 });
+  }
+  function playCheer() {
+    [1, 2, 3, 4].forEach(function (i, idx) {
+      playTone({ freq: PENTATONIC[i], duration: 0.24, type: 'triangle', gain: 0.2, delay: idx * 0.1 });
+    });
+  }
+  function playSparkle() {
+    playTone({ freq: 1568, duration: 0.12, type: 'sine', gain: 0.12 });
+    playTone({ freq: 2093, duration: 0.14, type: 'sine', gain: 0.1, delay: 0.05 });
+  }
+  function playDot() {
+    playTone({ freq: 900 + Math.random() * 400, duration: 0.07, type: 'sine', gain: 0.12 });
+  }
+  function playChime() {
+    playTone({ freq: 784, duration: 0.12, type: 'sine', gain: 0.16 });
+    playTone({ freq: 988, duration: 0.16, type: 'sine', gain: 0.16, delay: 0.1 });
+  }
+  function playWellDone() {
+    playTone({ freq: 659.25, duration: 0.14, type: 'triangle', gain: 0.18 });
+    playTone({ freq: 880, duration: 0.2, type: 'triangle', gain: 0.2, delay: 0.09 });
+  }
+
+  var noiseBuffer = null;
+  function getNoiseBuffer(ctx) {
+    if (noiseBuffer) return noiseBuffer;
+    var len = ctx.sampleRate * 1;
+    var buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    var data = buf.getChannelData(0);
+    for (var i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    noiseBuffer = buf;
+    return buf;
+  }
+  var scribbleSrc = null, scribbleFilter = null, scribbleGain = null;
+  function startScribble() {
+    if (muted) return;
+    var ctx = ensureAudio();
+    if (scribbleSrc) return;
+    scribbleSrc = ctx.createBufferSource();
+    scribbleSrc.buffer = getNoiseBuffer(ctx);
+    scribbleSrc.loop = true;
+    scribbleFilter = ctx.createBiquadFilter();
+    scribbleFilter.type = 'bandpass';
+    scribbleFilter.frequency.value = 900;
+    scribbleFilter.Q.value = 1.1;
+    scribbleGain = ctx.createGain();
+    scribbleGain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    scribbleGain.gain.linearRampToValueAtTime(0.045, ctx.currentTime + 0.06);
+    scribbleSrc.connect(scribbleFilter).connect(scribbleGain).connect(ctx.destination);
+    scribbleSrc.start();
+  }
+  function updateScribble(speed) {
+    if (!scribbleFilter || !audioCtx) return;
+    var f = 650 + Math.min(speed * 30, 900);
+    scribbleFilter.frequency.setTargetAtTime(f, audioCtx.currentTime, 0.05);
+  }
+  function stopScribble() {
+    if (!scribbleSrc) return;
+    var src = scribbleSrc, g = scribbleGain, ctx = audioCtx;
+    scribbleSrc = null; scribbleFilter = null; scribbleGain = null;
+    if (ctx && g) g.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.03);
+    setTimeout(function () { try { src.stop(); src.disconnect(); g.disconnect(); } catch (e) {} }, 150);
+  }
+
+  var soundToggle = document.getElementById('soundToggle');
+  function refreshSoundBtn() {
+    soundToggle.textContent = muted ? '🔇' : '🔊';
+    soundToggle.setAttribute('aria-pressed', String(!muted));
+  }
+  refreshSoundBtn();
+  soundToggle.addEventListener('click', function () {
+    muted = !muted;
+    localStorage.setItem('crayon-muted', muted ? '1' : '0');
+    refreshSoundBtn();
+    if (muted) stopScribble(); else playClick();
+  });
+
+  /* ================= Toast ================= */
+  var toastEl = document.getElementById('toast');
+  var toastTimer = null;
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 2200);
+  }
+
+  /* ================= Confetti ================= */
+  var confettiLayer = document.getElementById('confetti-layer');
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function burstConfetti() {
+    if (reduceMotion) return;
+    var colors = CRAYONS.map(function (c) { return c.hex; });
+    for (var i = 0; i < 26; i++) {
+      var el = document.createElement('div');
+      el.className = 'confetto';
+      el.style.left = (Math.random() * 100) + 'vw';
+      el.style.background = colors[Math.floor(Math.random() * colors.length)];
+      var dur = 1.6 + Math.random() * 1.2;
+      el.style.animationDuration = dur + 's';
+      el.style.animationDelay = (Math.random() * 0.4) + 's';
+      confettiLayer.appendChild(el);
+      (function (node, total) { setTimeout(function () { node.remove(); }, total * 1000 + 500); })(el, dur);
+    }
+  }
+
+  /* ================= Save to device (plain static site — no host runtime) ================= */
+  function saveHint() {
+    var ua = navigator.userAgent || '';
+    if (/iPad|iPhone|iPod/.test(ua)) return '(아이패드는 "파일" 앱 → "다운로드" 폴더예요)';
+    if (/Android/.test(ua)) return '(안드로이드는 "내 파일" 앱 → "Download" 폴더예요)';
+    return '(다운로드 폴더에 있어요)';
+  }
+  function saveBlob(blob, filename) {
+    try {
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+      showToast('저장했어요! 📥 ' + saveHint());
+    } catch (e) {
+      showToast('저장하지 못했어요. 다시 시도해볼까요?');
+    }
+  }
+
+  /* ================= Tabs ================= */
+  var tabBtns = Array.prototype.slice.call(document.querySelectorAll('.tab-btn'));
+  var panels = {
+    color: document.getElementById('panel-color'),
+    draw: document.getElementById('panel-draw'),
+    stamp: document.getElementById('panel-stamp'),
+    symmetry: document.getElementById('panel-symmetry'),
+    dot: document.getElementById('panel-dot'),
+    music: document.getElementById('panel-music'),
+    trace: document.getElementById('panel-trace'),
+    coop: document.getElementById('panel-coop')
+  };
+  tabBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var tab = btn.getAttribute('data-tab');
+      tabBtns.forEach(function (b) { b.setAttribute('aria-selected', String(b === btn)); });
+      Object.keys(panels).forEach(function (key) { panels[key].hidden = key !== tab; });
+      stopScribble();
+      isDrawing = false; symDrawing = false; dotDrawing = false; musicPlaying = false; traceDrawing = false;
+      playClick();
+    });
+  });
+
+  /* ================= Swatch factory ================= */
+  function buildSwatches(container, onPick, initialHex) {
+    container.innerHTML = '';
+    var buttons = [];
+    CRAYONS.forEach(function (c) {
+      var b = document.createElement('button');
+      b.className = 'swatch';
+      b.style.background = c.hex;
+      b.setAttribute('aria-label', c.name);
+      b.setAttribute('aria-pressed', String(c.hex === initialHex));
+      b.addEventListener('click', function () {
+        buttons.forEach(function (x) { x.setAttribute('aria-pressed', 'false'); });
+        b.setAttribute('aria-pressed', 'true');
+        playClick();
+        onPick(c.hex);
+      });
+      buttons.push(b);
+      container.appendChild(b);
+    });
+  }
+
+  function canvasPoint(canvas, e) {
+    var rect = canvas.getBoundingClientRect();
+    var x = (e.clientX - rect.left) * (canvas.width / rect.width);
+    var y = (e.clientY - rect.top) * (canvas.height / rect.height);
+    return { x: x, y: y };
+  }
+  function fillPaper(ctx, canvas) {
+    ctx.fillStyle = '#FFFBF2';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  /* ================= Shared coloring-gallery engine (색칠하기 + 협동색칠) ================= */
+  function saveSvgAsPng(svg, filename) {
+    var clone = svg.cloneNode(true);
+    clone.removeAttribute('hidden');
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    var scale = 2, w = 480 * scale, h = 480 * scale;
+    clone.setAttribute('width', w);
+    clone.setAttribute('height', h);
+    var svgStr = new XMLSerializer().serializeToString(clone);
+    var svgBlob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+    var url = URL.createObjectURL(svgBlob);
+    var img = new Image();
+    img.onload = function () {
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#FFFBF2';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(function (blob) { if (blob) saveBlob(blob, filename); }, 'image/png');
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); showToast('저장하지 못했어요.'); };
+    img.src = url;
+  }
+
+  function setupColoringStage(pickerEl, stageEl, progressEl, getColor, onComplete, onFill) {
+    var picBtns = Array.prototype.slice.call(pickerEl.querySelectorAll('.pic-btn'));
+    var svgs = Array.prototype.slice.call(stageEl.querySelectorAll('.stage-svg'));
+    // Note: SVGElement's `hidden` IDL property does not reliably reflect the
+    // content attribute in every browser, so the attribute is set directly.
+    function activeSvg() { return svgs.filter(function (s) { return !s.hasAttribute('hidden'); })[0] || svgs[0]; }
+    function updateProgress() {
+      var svg = activeSvg();
+      var cells = svg.querySelectorAll('.fillable');
+      var touched = 0;
+      cells.forEach(function (c) { if (c.dataset.touched === '1') touched++; });
+      progressEl.textContent = touched + ' / ' + cells.length + '칸 색칠했어요';
+      if (touched === cells.length && cells.length > 0 && onComplete) onComplete();
+    }
+    picBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var pic = btn.getAttribute('data-pic');
+        picBtns.forEach(function (b) { b.setAttribute('aria-pressed', String(b === btn)); });
+        svgs.forEach(function (s) {
+          if (s.getAttribute('data-pic') === pic) s.removeAttribute('hidden');
+          else s.setAttribute('hidden', '');
+        });
+        playClick();
+        updateProgress();
+      });
+    });
+    svgs.forEach(function (svg) {
+      svg.addEventListener('click', function (e) {
+        var target = e.target;
+        if (!target.classList || !target.classList.contains('fillable')) return;
+        target.setAttribute('fill', getColor());
+        target.dataset.touched = '1';
+        playPop();
+        if (onFill) onFill(target);
+        updateProgress();
+      });
+    });
+    updateProgress();
+    return {
+      activeSvg: activeSvg,
+      updateProgress: updateProgress,
+      resetActive: function () {
+        activeSvg().querySelectorAll('.fillable').forEach(function (c) { c.setAttribute('fill', '#FFFFFF'); delete c.dataset.touched; });
+        updateProgress();
+      }
+    };
+  }
+
+  /* ---- 색칠하기 ---- */
+  var colorCurrent = '#F14B4B';
+  buildSwatches(document.getElementById('colorSwatches'), function (hex) { colorCurrent = hex; }, colorCurrent);
+  var colorGallery = setupColoringStage(
+    document.getElementById('colorPicPicker'),
+    document.getElementById('colorStage'),
+    document.getElementById('colorProgress'),
+    function () { return colorCurrent; },
+    function () { showToast('우와, 다 색칠했어요! 🎉'); burstConfetti(); playCheer(); }
+  );
+  document.getElementById('colorReset').addEventListener('click', function () { colorGallery.resetActive(); playClick(); });
+  document.getElementById('colorSave').addEventListener('click', function () { saveSvgAsPng(colorGallery.activeSvg(), '나의_색칠그림.png'); });
+
+  /* ---- 협동색칠 (같은 그림을 복제해서 둘이 번갈아 칠하기) ---- */
+  var coopColor = '#F14B4B';
+  buildSwatches(document.getElementById('coopSwatches'), function (hex) { coopColor = hex; }, coopColor);
+
+  var coopPickerEl = document.getElementById('coopPicPicker');
+  var mainPickerEl = document.getElementById('colorPicPicker');
+  Array.prototype.forEach.call(mainPickerEl.children, function (btn) { coopPickerEl.appendChild(btn.cloneNode(true)); });
+
+  var coopStageEl = document.getElementById('coopStage');
+  Array.prototype.forEach.call(document.getElementById('colorStage').children, function (svg) { coopStageEl.appendChild(svg.cloneNode(true)); });
+  Array.prototype.forEach.call(coopStageEl.querySelectorAll('[id]'), function (el) { el.removeAttribute('id'); });
+
+  var currentPlayer = 1;
+  var turnBanner = document.getElementById('turnBanner');
+  function updateTurnBanner() {
+    turnBanner.textContent = currentPlayer === 1 ? '1️⃣ 번 친구 차례예요!' : '2️⃣ 번 친구 차례예요!';
+    turnBanner.style.borderColor = currentPlayer === 1 ? 'var(--accent)' : 'var(--accent-3)';
+    turnBanner.style.background = currentPlayer === 1
+      ? 'color-mix(in srgb, var(--accent) 18%, var(--surface))'
+      : 'color-mix(in srgb, var(--accent-3) 18%, var(--surface))';
+  }
+  updateTurnBanner();
+
+  var coopGallery = setupColoringStage(
+    coopPickerEl, coopStageEl, document.getElementById('coopProgress'),
+    function () { return coopColor; },
+    function () { showToast('함께 완성했어요! 🎉👏'); burstConfetti(); playCheer(); },
+    function () { currentPlayer = currentPlayer === 1 ? 2 : 1; updateTurnBanner(); playChime(); }
+  );
+  document.getElementById('coopReset').addEventListener('click', function () {
+    coopGallery.resetActive(); currentPlayer = 1; updateTurnBanner(); playClick();
+  });
+  document.getElementById('coopSave').addEventListener('click', function () { saveSvgAsPng(coopGallery.activeSvg(), '함께_색칠한_그림.png'); });
+
+  /* ================= FREE DRAW TAB ================= */
+  var drawCanvas = document.getElementById('drawCanvas');
+  var dctx = drawCanvas.getContext('2d');
+  fillPaper(dctx, drawCanvas);
+  dctx.lineCap = 'round';
+  dctx.lineJoin = 'round';
+
+  var drawColor = '#3E6FD9';
+  buildSwatches(document.getElementById('drawSwatches'), function (hex) {
+    drawColor = hex; eraserOn = false;
+    document.getElementById('eraserBtn').setAttribute('aria-pressed', 'false');
+  }, drawColor);
+
+  var brushSize = 16, eraserOn = false;
+  var sizeBtns = Array.prototype.slice.call(document.querySelectorAll('#panel-draw .size-btn'));
+  sizeBtns.forEach(function (b) {
+    b.addEventListener('click', function () {
+      sizeBtns.forEach(function (x) { x.setAttribute('aria-pressed', 'false'); });
+      b.setAttribute('aria-pressed', 'true');
+      brushSize = parseInt(b.getAttribute('data-size'), 10);
+      eraserOn = b.id === 'eraserBtn';
+      playClick();
+    });
+  });
+
+  var isDrawing = false, lastPt = null, lastT = 0;
+  drawCanvas.addEventListener('pointerdown', function (e) {
+    isDrawing = true;
+    drawCanvas.setPointerCapture(e.pointerId);
+    lastPt = canvasPoint(drawCanvas, e);
+    lastT = performance.now();
+    dctx.beginPath();
+    dctx.moveTo(lastPt.x, lastPt.y);
+    startScribble();
+  });
+  drawCanvas.addEventListener('pointermove', function (e) {
+    if (!isDrawing) return;
+    var pt = canvasPoint(drawCanvas, e);
+    var now = performance.now();
+    var dt = Math.max(1, now - lastT);
+    var dist = Math.hypot(pt.x - lastPt.x, pt.y - lastPt.y);
+    updateScribble(dist / dt);
+    dctx.strokeStyle = eraserOn ? '#FFFBF2' : drawColor;
+    dctx.lineWidth = brushSize * 2;
+    dctx.lineTo(pt.x, pt.y);
+    dctx.stroke();
+    lastPt = pt; lastT = now;
+  });
+  function endDrawStroke() { if (isDrawing) { isDrawing = false; stopScribble(); } }
+  drawCanvas.addEventListener('pointerup', endDrawStroke);
+  drawCanvas.addEventListener('pointerleave', endDrawStroke);
+  drawCanvas.addEventListener('pointercancel', endDrawStroke);
+
+  document.getElementById('drawClear').addEventListener('click', function () { fillPaper(dctx, drawCanvas); playClick(); });
+  document.getElementById('drawSave').addEventListener('click', function () {
+    drawCanvas.toBlob(function (blob) { if (blob) saveBlob(blob, '나의_자유그림.png'); }, 'image/png');
+  });
+
+  /* ================= STAMP TAB ================= */
+  var stampCanvas = document.getElementById('stampCanvas');
+  var sctx = stampCanvas.getContext('2d');
+  fillPaper(sctx, stampCanvas);
+
+  var STAMPS = ['⭐','🌸','🚗','☁️','❤️','🌈','☀️','🦋','🍎','🐝'];
+  var currentStampIndex = 0;
+  var stampButtonsEl = document.getElementById('stampButtons');
+  STAMPS.forEach(function (emoji, idx) {
+    var b = document.createElement('button');
+    b.className = 'stamp-btn';
+    b.textContent = emoji;
+    b.setAttribute('aria-pressed', String(idx === 0));
+    b.addEventListener('click', function () {
+      Array.prototype.forEach.call(stampButtonsEl.children, function (c) { c.setAttribute('aria-pressed', 'false'); });
+      b.setAttribute('aria-pressed', 'true');
+      currentStampIndex = idx;
+      playClick();
+    });
+    stampButtonsEl.appendChild(b);
+  });
+
+  buildSwatches(document.getElementById('stampSwatches'), function (hex) {
+    sctx.fillStyle = hex;
+    sctx.fillRect(0, 0, stampCanvas.width, stampCanvas.height);
+  }, null);
+
+  stampCanvas.addEventListener('pointerdown', function (e) {
+    var pt = canvasPoint(stampCanvas, e);
+    var emoji = STAMPS[currentStampIndex];
+    var size = 70 + Math.random() * 40;
+    var angle = (Math.random() * 36 - 18) * Math.PI / 180;
+    sctx.save();
+    sctx.translate(pt.x, pt.y);
+    sctx.rotate(angle);
+    sctx.font = size + 'px sans-serif';
+    sctx.textAlign = 'center';
+    sctx.textBaseline = 'middle';
+    sctx.fillText(emoji, 0, 0);
+    sctx.restore();
+    playBoing(currentStampIndex);
+  });
+
+  document.getElementById('stampClear').addEventListener('click', function () { fillPaper(sctx, stampCanvas); playClick(); });
+  document.getElementById('stampSave').addEventListener('click', function () {
+    stampCanvas.toBlob(function (blob) { if (blob) saveBlob(blob, '나의_도장그림.png'); }, 'image/png');
+  });
+
+  /* ================= SYMMETRY / MANDALA TAB ================= */
+  var symCanvas = document.getElementById('symCanvas');
+  var xctx = symCanvas.getContext('2d');
+  fillPaper(xctx, symCanvas);
+  xctx.lineCap = 'round'; xctx.lineJoin = 'round';
+
+  var symColor = '#8E6FD1';
+  buildSwatches(document.getElementById('symSwatches'), function (hex) { symColor = hex; }, symColor);
+
+  var symCount = 6;
+  Array.prototype.slice.call(document.querySelectorAll('.sym-count-btn')).forEach(function (b) {
+    b.addEventListener('click', function () {
+      Array.prototype.forEach.call(b.parentNode.children, function (x) { x.setAttribute('aria-pressed', 'false'); });
+      b.setAttribute('aria-pressed', 'true');
+      symCount = parseInt(b.getAttribute('data-count'), 10);
+      playClick();
+    });
+  });
+
+  var symCx = 480, symCy = 480;
+  function rotatePoint(pt, angle) {
+    var dx = pt.x - symCx, dy = pt.y - symCy;
+    var cos = Math.cos(angle), sin = Math.sin(angle);
+    return { x: symCx + dx * cos - dy * sin, y: symCy + dx * sin + dy * cos };
+  }
+  function reflectPoint(pt) { return { x: symCx - (pt.x - symCx), y: pt.y }; }
+  function drawMirroredSegment(from, to) {
+    xctx.strokeStyle = symColor;
+    xctx.lineWidth = 8;
+    for (var k = 0; k < symCount; k++) {
+      var angle = (Math.PI * 2 / symCount) * k;
+      var p1 = rotatePoint(from, angle), p2 = rotatePoint(to, angle);
+      xctx.beginPath(); xctx.moveTo(p1.x, p1.y); xctx.lineTo(p2.x, p2.y); xctx.stroke();
+      var p1r = rotatePoint(reflectPoint(from), angle), p2r = rotatePoint(reflectPoint(to), angle);
+      xctx.beginPath(); xctx.moveTo(p1r.x, p1r.y); xctx.lineTo(p2r.x, p2r.y); xctx.stroke();
+    }
+  }
+
+  var symDrawing = false, symLast = null, symLastT = 0;
+  symCanvas.addEventListener('pointerdown', function (e) {
+    symDrawing = true;
+    symCanvas.setPointerCapture(e.pointerId);
+    symLast = canvasPoint(symCanvas, e);
+    symLastT = performance.now();
+    playSparkle();
+    startScribble();
+  });
+  symCanvas.addEventListener('pointermove', function (e) {
+    if (!symDrawing) return;
+    var pt = canvasPoint(symCanvas, e);
+    var now = performance.now();
+    var dt = Math.max(1, now - symLastT);
+    var dist = Math.hypot(pt.x - symLast.x, pt.y - symLast.y);
+    updateScribble(dist / dt);
+    drawMirroredSegment(symLast, pt);
+    symLast = pt; symLastT = now;
+  });
+  function endSym() { if (symDrawing) { symDrawing = false; stopScribble(); } }
+  symCanvas.addEventListener('pointerup', endSym);
+  symCanvas.addEventListener('pointerleave', endSym);
+  symCanvas.addEventListener('pointercancel', endSym);
+
+  document.getElementById('symClear').addEventListener('click', function () { fillPaper(xctx, symCanvas); playClick(); });
+  document.getElementById('symSave').addEventListener('click', function () {
+    symCanvas.toBlob(function (blob) { if (blob) saveBlob(blob, '나의_대칭그림.png'); }, 'image/png');
+  });
+
+  /* ================= POINTILLISM TAB ================= */
+  var dotCanvas = document.getElementById('dotCanvas');
+  var octx = dotCanvas.getContext('2d');
+  fillPaper(octx, dotCanvas);
+
+  var dotColor = '#FF9142';
+  buildSwatches(document.getElementById('dotSwatches'), function (hex) { dotColor = hex; }, dotColor);
+
+  var dotSize = 13;
+  Array.prototype.slice.call(document.querySelectorAll('.dot-size-btn')).forEach(function (b) {
+    b.addEventListener('click', function () {
+      Array.prototype.forEach.call(b.parentNode.children, function (x) { x.setAttribute('aria-pressed', 'false'); });
+      b.setAttribute('aria-pressed', 'true');
+      dotSize = parseInt(b.getAttribute('data-size'), 10);
+      playClick();
+    });
+  });
+
+  function stampDot(pt) {
+    octx.beginPath();
+    octx.fillStyle = dotColor;
+    octx.arc(pt.x, pt.y, dotSize, 0, Math.PI * 2);
+    octx.fill();
+    playDot();
+  }
+
+  var dotDrawing = false, dotLastPt = null;
+  dotCanvas.addEventListener('pointerdown', function (e) {
+    dotDrawing = true;
+    dotCanvas.setPointerCapture(e.pointerId);
+    var pt = canvasPoint(dotCanvas, e);
+    stampDot(pt);
+    dotLastPt = pt;
+  });
+  dotCanvas.addEventListener('pointermove', function (e) {
+    if (!dotDrawing) return;
+    var pt = canvasPoint(dotCanvas, e);
+    var dist = Math.hypot(pt.x - dotLastPt.x, pt.y - dotLastPt.y);
+    if (dist > dotSize * 1.6) { stampDot(pt); dotLastPt = pt; }
+  });
+  function endDot() { dotDrawing = false; }
+  dotCanvas.addEventListener('pointerup', endDot);
+  dotCanvas.addEventListener('pointerleave', endDot);
+  dotCanvas.addEventListener('pointercancel', endDot);
+
+  document.getElementById('dotClear').addEventListener('click', function () { fillPaper(octx, dotCanvas); playClick(); });
+  document.getElementById('dotSave').addEventListener('click', function () {
+    dotCanvas.toBlob(function (blob) { if (blob) saveBlob(blob, '나의_점묘화.png'); }, 'image/png');
+  });
+
+  /* ================= MUSIC DRAWING TAB ================= */
+  var musicCanvas = document.getElementById('musicCanvas');
+  var mctx = musicCanvas.getContext('2d');
+  var MUSIC_NOTES = [261.63,293.66,329.63,392.00,440.00,523.25,587.33,659.25,783.99,880.00,1046.50,1174.66,1318.51,1568.00];
+
+  function drawMusicBackground() {
+    fillPaper(mctx, musicCanvas);
+    var laneW = musicCanvas.width / CRAYONS.length;
+    for (var i = 0; i < CRAYONS.length; i++) {
+      mctx.globalAlpha = 0.16;
+      mctx.fillStyle = CRAYONS[i].hex;
+      mctx.fillRect(i * laneW, 0, laneW, musicCanvas.height);
+    }
+    mctx.globalAlpha = 1;
+  }
+  drawMusicBackground();
+
+  function laneAt(x) {
+    var laneW = musicCanvas.width / CRAYONS.length;
+    return Math.max(0, Math.min(CRAYONS.length - 1, Math.floor(x / laneW)));
+  }
+  function paintBlob(pt, lane) {
+    mctx.beginPath();
+    mctx.fillStyle = CRAYONS[lane].hex;
+    mctx.arc(pt.x, pt.y, 16 + Math.random() * 10, 0, Math.PI * 2);
+    mctx.fill();
+  }
+  function triggerNote(lane) { playTone({ freq: MUSIC_NOTES[lane], duration: 0.35, type: 'triangle', gain: 0.22 }); }
+
+  var musicPlaying = false, currentLane = -1;
+  musicCanvas.addEventListener('pointerdown', function (e) {
+    musicPlaying = true;
+    musicCanvas.setPointerCapture(e.pointerId);
+    var pt = canvasPoint(musicCanvas, e);
+    var lane = laneAt(pt.x);
+    currentLane = lane;
+    triggerNote(lane);
+    paintBlob(pt, lane);
+  });
+  musicCanvas.addEventListener('pointermove', function (e) {
+    if (!musicPlaying) return;
+    var pt = canvasPoint(musicCanvas, e);
+    var lane = laneAt(pt.x);
+    if (lane !== currentLane) { currentLane = lane; triggerNote(lane); }
+    paintBlob(pt, lane);
+  });
+  function endMusic() { musicPlaying = false; currentLane = -1; }
+  musicCanvas.addEventListener('pointerup', endMusic);
+  musicCanvas.addEventListener('pointerleave', endMusic);
+  musicCanvas.addEventListener('pointercancel', endMusic);
+
+  document.getElementById('musicClear').addEventListener('click', function () { drawMusicBackground(); playClick(); });
+  document.getElementById('musicSave').addEventListener('click', function () {
+    musicCanvas.toBlob(function (blob) { if (blob) saveBlob(blob, '나의_악기그림.png'); }, 'image/png');
+  });
+
+  /* ================= TRACING TAB ================= */
+  var traceCanvas = document.getElementById('traceCanvas');
+  var tctx = traceCanvas.getContext('2d');
+  var traceColor = '#3E6FD9';
+  buildSwatches(document.getElementById('traceSwatches'), function (hex) { traceColor = hex; }, traceColor);
+
+  var currentShape = 'star';
+  function drawGuide(shape) {
+    fillPaper(tctx, traceCanvas);
+    tctx.save();
+    tctx.strokeStyle = 'rgba(38,51,44,0.35)';
+    tctx.lineWidth = 5;
+    tctx.setLineDash([16, 12]);
+    tctx.lineCap = 'round';
+    var cx = 480, cy = 480;
+    tctx.beginPath();
+    if (shape === 'circle') {
+      tctx.arc(cx, cy, 260, 0, Math.PI * 2);
+    } else if (shape === 'star') {
+      var spikes = 5, outerR = 280, innerR = 115;
+      for (var i = 0; i < spikes * 2; i++) {
+        var r = i % 2 === 0 ? outerR : innerR;
+        var ang = (Math.PI / spikes) * i - Math.PI / 2;
+        var x = cx + Math.cos(ang) * r, y = cy + Math.sin(ang) * r;
+        if (i === 0) tctx.moveTo(x, y); else tctx.lineTo(x, y);
+      }
+      tctx.closePath();
+    } else if (shape === 'heart') {
+      tctx.moveTo(cx, cy + 180);
+      tctx.bezierCurveTo(cx - 380, cy - 120, cx - 160, cy - 360, cx, cy - 160);
+      tctx.bezierCurveTo(cx + 160, cy - 360, cx + 380, cy - 120, cx, cy + 180);
+    } else if (shape === 'spiral') {
+      for (var t = 0; t <= Math.PI * 8; t += 0.08) {
+        var r2 = t * 17;
+        var x2 = cx + Math.cos(t) * r2, y2 = cy + Math.sin(t) * r2;
+        if (t === 0) tctx.moveTo(x2, y2); else tctx.lineTo(x2, y2);
+      }
+    } else if (shape === 'zigzag') {
+      var points = 8, w = 860, startX = cx - w / 2;
+      tctx.moveTo(startX, cy);
+      for (var j = 1; j <= points; j++) {
+        var xz = startX + (w / points) * j;
+        var yz = cy + (j % 2 === 0 ? 140 : -140);
+        tctx.lineTo(xz, yz);
+      }
+    }
+    tctx.stroke();
+    tctx.restore();
+  }
+  drawGuide(currentShape);
+
+  Array.prototype.slice.call(document.querySelectorAll('#tracePicker .pic-btn')).forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      Array.prototype.forEach.call(document.querySelectorAll('#tracePicker .pic-btn'), function (b) { b.setAttribute('aria-pressed', String(b === btn)); });
+      currentShape = btn.getAttribute('data-shape');
+      drawGuide(currentShape);
+      playClick();
+    });
+  });
+
+  var traceDrawing = false, tracePt = null, traceDist = 0;
+  traceCanvas.addEventListener('pointerdown', function (e) {
+    traceDrawing = true;
+    traceCanvas.setPointerCapture(e.pointerId);
+    tracePt = canvasPoint(traceCanvas, e);
+    traceDist = 0;
+    tctx.beginPath();
+    tctx.moveTo(tracePt.x, tracePt.y);
+    startScribble();
+  });
+  traceCanvas.addEventListener('pointermove', function (e) {
+    if (!traceDrawing) return;
+    var pt = canvasPoint(traceCanvas, e);
+    var dist = Math.hypot(pt.x - tracePt.x, pt.y - tracePt.y);
+    updateScribble(dist);
+    tctx.strokeStyle = traceColor;
+    tctx.lineWidth = 14;
+    tctx.setLineDash([]);
+    tctx.lineTo(pt.x, pt.y);
+    tctx.stroke();
+    traceDist += dist;
+    tracePt = pt;
+  });
+  function endTrace() {
+    if (!traceDrawing) return;
+    traceDrawing = false;
+    stopScribble();
+    if (traceDist > 300) { playWellDone(); showToast('참 잘했어요! ✍️'); }
+  }
+  traceCanvas.addEventListener('pointerup', endTrace);
+  traceCanvas.addEventListener('pointerleave', endTrace);
+  traceCanvas.addEventListener('pointercancel', endTrace);
+
+  document.getElementById('traceClear').addEventListener('click', function () { drawGuide(currentShape); playClick(); });
+  document.getElementById('traceSave').addEventListener('click', function () {
+    traceCanvas.toBlob(function (blob) { if (blob) saveBlob(blob, '나의_따라그리기.png'); }, 'image/png');
+  });
+
+})();
+</script>
+</body>
+</html>

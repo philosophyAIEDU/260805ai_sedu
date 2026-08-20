@@ -54,7 +54,9 @@ const CFG = {
      여기에 추가하면 홈 화면 아래쪽에 카드로 나타납니다. */
   LINKS: [
     { emoji: '🎼', label: 'AI 감각 창작 수업', desc: '다른 창작 수업 앱으로 가요',
-      url: 'https://hkstudent.netlify.app/' }
+      url: 'https://hkstudent.netlify.app/' },
+    { emoji: '🖍️', label: '크레용 놀이터', desc: '색칠·그리기·도장놀이를 소리와 함께 즐겨요',
+      url: 'crayon-playground/index.html' }
   ],
 
   /* ---------- 주제 ---------- */
