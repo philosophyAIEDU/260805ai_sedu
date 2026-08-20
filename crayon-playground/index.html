@@ -267,6 +267,11 @@
       <button class="tab-btn" role="tab" data-tab="music" aria-selected="false"><span class="ic">🎵</span>악기그리기</button>
       <button class="tab-btn" role="tab" data-tab="seq" aria-selected="false"><span class="ic">🎼</span>노래그림</button>
       <button class="tab-btn" role="tab" data-tab="musicbox" aria-selected="false"><span class="ic">🎠</span>소리오르골</button>
+      <button class="tab-btn" role="tab" data-tab="instrument" aria-selected="false"><span class="ic">🎹</span>악기색칠</button>
+      <button class="tab-btn" role="tab" data-tab="wave" aria-selected="false"><span class="ic">🌊</span>소리물결</button>
+      <button class="tab-btn" role="tab" data-tab="weather" aria-selected="false"><span class="ic">🌦️</span>소리풍경</button>
+      <button class="tab-btn" role="tab" data-tab="animals" aria-selected="false"><span class="ic">🐾</span>동물합창단</button>
+      <button class="tab-btn" role="tab" data-tab="rhythm" aria-selected="false"><span class="ic">🥁</span>리듬밴드</button>
       <button class="tab-btn" role="tab" data-tab="trace" aria-selected="false"><span class="ic">✍️</span>따라그리기</button>
       <button class="tab-btn" role="tab" data-tab="coop" aria-selected="false"><span class="ic">🤝</span>협동색칠</button>
     </nav>
@@ -587,6 +592,148 @@
       </div>
     </section>
 
+    <!-- ===================== INSTRUMENT COLORING PANEL ===================== -->
+    <section id="panel-instrument" class="panel" data-panel role="tabpanel" hidden>
+      <p class="hint">건반과 실로폰 막대를 색칠해보세요. 칠한 자리를 다시 누르면 소리가 나요. 진짜 악기처럼 연주해보세요!</p>
+      <div class="picture-picker" id="instPicPicker" role="group" aria-label="악기 고르기">
+        <button class="pic-btn" data-pic="xylo" aria-pressed="true"><span class="ic">🎶</span>실로폰</button>
+        <button class="pic-btn" data-pic="piano" aria-pressed="false"><span class="ic">🎹</span>피아노</button>
+      </div>
+      <div class="workspace">
+        <div class="stage-wrap">
+          <div class="stage" id="instStage">
+            <!-- XYLOPHONE -->
+            <svg class="stage-svg" data-pic="xylo" viewBox="0 0 480 480" xmlns="http://www.w3.org/2000/svg">
+              <rect x="10" y="390" width="460" height="30" rx="10" fill="#C9976B" stroke="#26332C" stroke-width="6"/>
+              <rect class="fillable" data-note="261.63" x="28" y="80" width="46" height="300" rx="10" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+              <rect class="fillable" data-note="293.66" x="82" y="106" width="46" height="274" rx="10" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+              <rect class="fillable" data-note="329.63" x="136" y="132" width="46" height="248" rx="10" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+              <rect class="fillable" data-note="392.00" x="190" y="158" width="46" height="222" rx="10" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+              <rect class="fillable" data-note="440.00" x="244" y="184" width="46" height="196" rx="10" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+              <rect class="fillable" data-note="523.25" x="298" y="210" width="46" height="170" rx="10" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+              <rect class="fillable" data-note="587.33" x="352" y="236" width="46" height="144" rx="10" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+              <rect class="fillable" data-note="659.25" x="406" y="262" width="46" height="118" rx="10" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+            </svg>
+            <!-- PIANO -->
+            <svg class="stage-svg" data-pic="piano" viewBox="0 0 480 480" xmlns="http://www.w3.org/2000/svg" hidden>
+              <rect x="20" y="30" width="440" height="30" rx="8" fill="#3A3A3A" stroke="#26332C" stroke-width="6"/>
+              <rect class="fillable" data-note="261.63" x="20" y="60" width="55" height="360" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+              <rect class="fillable" data-note="293.66" x="75" y="60" width="55" height="360" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+              <rect class="fillable" data-note="329.63" x="130" y="60" width="55" height="360" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+              <rect class="fillable" data-note="349.23" x="185" y="60" width="55" height="360" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+              <rect class="fillable" data-note="392.00" x="240" y="60" width="55" height="360" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+              <rect class="fillable" data-note="440.00" x="295" y="60" width="55" height="360" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+              <rect class="fillable" data-note="493.88" x="350" y="60" width="55" height="360" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+              <rect class="fillable" data-note="523.25" x="405" y="60" width="55" height="360" fill="#FFFFFF" stroke="#26332C" stroke-width="6"/>
+            </svg>
+          </div>
+          <p class="progress" id="instProgress">0 / 8칸 색칠했어요</p>
+        </div>
+        <div class="tray">
+          <div class="tray-section">
+            <h2>색깔 고르기</h2>
+            <div class="swatches" id="instSwatches" role="group" aria-label="색깔 고르기"></div>
+          </div>
+          <div class="tray-section actions">
+            <button class="btn btn-ghost" id="instReset">🔄 다시 칠하기</button>
+            <button class="btn btn-primary" id="instSave">💾 저장하기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== MELODY WAVE PANEL ===================== -->
+    <section id="panel-wave" class="panel" data-panel role="tabpanel" hidden>
+      <p class="hint">한 줄로 쭉 이어서 그려보세요. 높이 그리면 높은 소리, 낮게 그리면 낮은 소리가 나요. ▶️ 를 누르면 그린 모양 그대로 노래가 돼요!</p>
+      <div class="workspace">
+        <div class="stage-wrap">
+          <div class="stage" id="waveStage"><canvas class="stage-canvas" id="waveCanvas" width="960" height="960"></canvas></div>
+        </div>
+        <div class="tray">
+          <div class="tray-section">
+            <h2>색깔 고르기</h2>
+            <div class="swatches" id="waveSwatches" role="group" aria-label="색깔 고르기"></div>
+          </div>
+          <div class="tray-section actions">
+            <button class="btn btn-primary" id="wavePlay">▶️ 노래로 들어보기</button>
+            <button class="btn btn-ghost" id="waveClear">🔄 지우기</button>
+            <button class="btn btn-ghost" id="waveSave">💾 저장하기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== WEATHER SOUNDSCAPE PANEL ===================== -->
+    <section id="panel-weather" class="panel" data-panel role="tabpanel" hidden>
+      <p class="hint">날씨 스티커를 붙이면 그때그때 소리가 나요. 다 붙인 다음 🎶 눌러서 내가 만든 날씨 풍경을 들어보세요!</p>
+      <div class="workspace">
+        <div class="stage-wrap">
+          <div class="stage" id="weatherStage"><canvas class="stage-canvas" id="weatherCanvas" width="960" height="960"></canvas></div>
+        </div>
+        <div class="tray">
+          <div class="tray-section">
+            <h2>날씨 고르기</h2>
+            <div class="stamp-row" id="weatherButtons" role="group" aria-label="날씨 고르기"></div>
+          </div>
+          <div class="tray-section">
+            <h2>하늘 색칠하기</h2>
+            <div class="swatches" id="weatherSwatches" role="group" aria-label="하늘 색깔"></div>
+          </div>
+          <div class="tray-section actions">
+            <button class="btn btn-primary" id="weatherPlay">🎶 풍경 연주하기</button>
+            <button class="btn btn-ghost" id="weatherClear">🔄 지우기</button>
+            <button class="btn btn-ghost" id="weatherSave">💾 저장하기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== ANIMAL CHOIR PANEL ===================== -->
+    <section id="panel-animals" class="panel" data-panel role="tabpanel" hidden>
+      <p class="hint">동물 친구들을 콕콕 놓아보세요. 🎤 를 누르면 놓은 동물들이 다 같이 돌아가며 노래해요!</p>
+      <div class="workspace">
+        <div class="stage-wrap">
+          <div class="stage" id="animalsStage"><canvas class="stage-canvas" id="animalsCanvas" width="960" height="960"></canvas></div>
+        </div>
+        <div class="tray">
+          <div class="tray-section">
+            <h2>동물 고르기</h2>
+            <div class="stamp-row" id="animalButtons" role="group" aria-label="동물 고르기"></div>
+          </div>
+          <div class="tray-section actions">
+            <button class="btn btn-primary" id="animalsPlay">🎤 다같이 노래해요</button>
+            <button class="btn btn-ghost" id="animalsClear">🔄 지우기</button>
+            <button class="btn btn-ghost" id="animalsSave">💾 저장하기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== RHYTHM BAND PANEL ===================== -->
+    <section id="panel-rhythm" class="panel" data-panel role="tabpanel" hidden>
+      <p class="hint">칸을 색칠해서 나만의 리듬을 만들어요. ▶️ 를 누르면 위에서부터 순서대로 악기가 연주돼요!</p>
+      <div class="workspace">
+        <div class="stage-wrap">
+          <div class="stage" id="rhythmStage"><canvas class="stage-canvas" id="rhythmCanvas" width="960" height="960"></canvas></div>
+        </div>
+        <div class="tray">
+          <div class="tray-section">
+            <h2>악기 순서 (위에서부터)</h2>
+            <p class="hint" style="margin:0">🥁 큰북 · 🪘 작은북 · 🎩 하이햇 · 🔔 트라이앵글 · 🪈 마라카스 · 🎶 우드블록</p>
+          </div>
+          <div class="tray-section">
+            <h2>색깔 고르기</h2>
+            <div class="swatches" id="rhythmSwatches" role="group" aria-label="색깔 고르기"></div>
+          </div>
+          <div class="tray-section actions">
+            <button class="btn btn-primary" id="rhythmPlay">▶️ 재생하기</button>
+            <button class="btn btn-ghost" id="rhythmClear">🔄 지우기</button>
+            <button class="btn btn-ghost" id="rhythmSave">💾 저장하기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ===================== TRACING PANEL ===================== -->
     <section id="panel-trace" class="panel" data-panel role="tabpanel" hidden>
       <p class="hint">점선을 따라 손가락으로 그어보세요. 다 그으면 소리로 칭찬해줘요!</p>
@@ -725,6 +872,23 @@
     noiseBuffer = buf;
     return buf;
   }
+  function playNoiseBurst(duration, gain, filterFreq) {
+    if (muted) return;
+    var ctx = ensureAudio();
+    var src = ctx.createBufferSource();
+    src.buffer = getNoiseBuffer(ctx);
+    var filt = ctx.createBiquadFilter();
+    filt.type = 'bandpass';
+    filt.frequency.value = filterFreq;
+    filt.Q.value = 1;
+    var g = ctx.createGain();
+    var t0 = ctx.currentTime;
+    g.gain.setValueAtTime(gain, t0);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+    src.connect(filt).connect(g).connect(ctx.destination);
+    src.start(t0);
+    src.stop(t0 + duration + 0.02);
+  }
   var scribbleSrc = null, scribbleFilter = null, scribbleGain = null;
   function startScribble() {
     if (muted) return;
@@ -832,6 +996,11 @@
     music: document.getElementById('panel-music'),
     seq: document.getElementById('panel-seq'),
     musicbox: document.getElementById('panel-musicbox'),
+    instrument: document.getElementById('panel-instrument'),
+    wave: document.getElementById('panel-wave'),
+    weather: document.getElementById('panel-weather'),
+    animals: document.getElementById('panel-animals'),
+    rhythm: document.getElementById('panel-rhythm'),
     trace: document.getElementById('panel-trace'),
     coop: document.getElementById('panel-coop')
   };
@@ -842,7 +1011,7 @@
       Object.keys(panels).forEach(function (key) { panels[key].hidden = key !== tab; });
       stopScribble();
       isDrawing = false; symDrawing = false; dotDrawing = false; musicPlaying = false; traceDrawing = false;
-      stopSeq(); stopMusicBox();
+      stopSeq(); stopMusicBox(); stopWave(); stopAnimalChoir(); stopRhythm();
       playClick();
     });
   });
@@ -905,7 +1074,7 @@
     img.src = url;
   }
 
-  function setupColoringStage(pickerEl, stageEl, progressEl, getColor, onComplete, onFill) {
+  function setupColoringStage(pickerEl, stageEl, progressEl, getColor, onComplete, onFill, fillSound) {
     var picBtns = Array.prototype.slice.call(pickerEl.querySelectorAll('.pic-btn'));
     var svgs = Array.prototype.slice.call(stageEl.querySelectorAll('.stage-svg'));
     // Note: SVGElement's `hidden` IDL property does not reliably reflect the
@@ -937,7 +1106,7 @@
         if (!target.classList || !target.classList.contains('fillable')) return;
         target.setAttribute('fill', getColor());
         target.dataset.touched = '1';
-        playPop();
+        (fillSound || playPop)(target);
         if (onFill) onFill(target);
         updateProgress();
       });
@@ -1487,6 +1656,357 @@
   });
   document.getElementById('mbSave').addEventListener('click', function () {
     mbCanvas.toBlob(function (blob) { if (blob) saveBlob(blob, '나의_소리오르골.png'); }, 'image/png');
+  });
+
+  /* ================= INSTRUMENT COLORING TAB (색칠하면 진짜 악기가 됩니다) ================= */
+  var instCurrent = '#F14B4B';
+  buildSwatches(document.getElementById('instSwatches'), function (hex) { instCurrent = hex; }, instCurrent);
+  function playInstrumentKey(target) {
+    var freq = parseFloat(target.dataset.note);
+    if (freq) playTone({ freq: freq, duration: 0.4, type: 'triangle', gain: 0.22 });
+    else playPop();
+  }
+  var instGallery = setupColoringStage(
+    document.getElementById('instPicPicker'),
+    document.getElementById('instStage'),
+    document.getElementById('instProgress'),
+    function () { return instCurrent; },
+    function () { showToast('내가 만든 악기 완성! 눌러서 연주해보세요 🎶'); burstConfetti(); playCheer(); },
+    null,
+    playInstrumentKey
+  );
+  document.getElementById('instReset').addEventListener('click', function () { instGallery.resetActive(); playClick(); });
+  document.getElementById('instSave').addEventListener('click', function () { saveSvgAsPng(instGallery.activeSvg(), '나의_악기그림.png'); });
+
+  /* ================= MELODY WAVE TAB (그린 선의 높낮이가 그대로 노래가 됩니다) ================= */
+  var waveCanvas = document.getElementById('waveCanvas');
+  var wvCtx = waveCanvas.getContext('2d');
+  fillPaper(wvCtx, waveCanvas);
+  wvCtx.lineCap = 'round'; wvCtx.lineJoin = 'round';
+
+  var waveColor = '#4EA8DE';
+  buildSwatches(document.getElementById('waveSwatches'), function (hex) { waveColor = hex; }, waveColor);
+
+  var WAVE_COLS = 48, WAVE_H = 960, WAVE_DURATION_MS = 4800;
+  var waveHeights = new Array(WAVE_COLS).fill(null);
+
+  function waveRecord(pt) {
+    var col = Math.max(0, Math.min(WAVE_COLS - 1, Math.floor(pt.x / (waveCanvas.width / WAVE_COLS))));
+    waveHeights[col] = pt.y;
+  }
+  var waveDrawing = false, waveLast = null;
+  waveCanvas.addEventListener('pointerdown', function (e) {
+    waveDrawing = true;
+    waveCanvas.setPointerCapture(e.pointerId);
+    waveLast = canvasPoint(waveCanvas, e);
+    wvCtx.beginPath(); wvCtx.moveTo(waveLast.x, waveLast.y);
+    waveRecord(waveLast);
+    startScribble();
+  });
+  waveCanvas.addEventListener('pointermove', function (e) {
+    if (!waveDrawing) return;
+    var pt = canvasPoint(waveCanvas, e);
+    updateScribble(Math.hypot(pt.x - waveLast.x, pt.y - waveLast.y));
+    wvCtx.strokeStyle = waveColor;
+    wvCtx.lineWidth = 10;
+    wvCtx.lineTo(pt.x, pt.y);
+    wvCtx.stroke();
+    var steps = Math.max(1, Math.round(Math.abs(pt.x - waveLast.x) / 8));
+    for (var s = 1; s <= steps; s++) {
+      var ix = waveLast.x + (pt.x - waveLast.x) * (s / steps);
+      var iy = waveLast.y + (pt.y - waveLast.y) * (s / steps);
+      waveRecord({ x: ix, y: iy });
+    }
+    waveLast = pt;
+  });
+  function endWaveStroke() { if (waveDrawing) { waveDrawing = false; stopScribble(); } }
+  waveCanvas.addEventListener('pointerup', endWaveStroke);
+  waveCanvas.addEventListener('pointerleave', endWaveStroke);
+  waveCanvas.addEventListener('pointercancel', endWaveStroke);
+
+  var waveOsc = null, waveGain = null, waveTimeout = null, waveActive = false;
+  function stopWave() {
+    if (waveOsc) { try { waveOsc.stop(); waveOsc.disconnect(); } catch (e) {} waveOsc = null; }
+    if (waveGain) { try { waveGain.disconnect(); } catch (e) {} waveGain = null; }
+    clearTimeout(waveTimeout); waveTimeout = null;
+    waveActive = false;
+    document.getElementById('wavePlay').disabled = false;
+  }
+  document.getElementById('wavePlay').addEventListener('click', function () {
+    if (waveActive) return;
+    if (muted) { showToast('소리가 꺼져 있어요. 오른쪽 위 🔊 를 눌러주세요!'); return; }
+    var hasLine = waveHeights.some(function (h) { return h != null; });
+    if (!hasLine) { showToast('먼저 선을 그려보세요! ✏️'); return; }
+    var ctx = ensureAudio();
+    var osc = ctx.createOscillator();
+    var g = ctx.createGain();
+    osc.type = 'sine';
+    g.gain.setValueAtTime(0.0001, ctx.currentTime);
+    osc.connect(g).connect(ctx.destination);
+    var stepSec = (WAVE_DURATION_MS / WAVE_COLS) / 1000;
+    var t0 = ctx.currentTime + 0.05;
+    var wasSounding = false;
+    for (var c = 0; c < WAVE_COLS; c++) {
+      var t = t0 + c * stepSec;
+      var y = waveHeights[c];
+      if (y == null) {
+        if (wasSounding) g.gain.linearRampToValueAtTime(0.0001, t);
+        wasSounding = false;
+      } else {
+        var freq = 220 * Math.pow(4, (WAVE_H - y) / WAVE_H);
+        if (!wasSounding) {
+          osc.frequency.setValueAtTime(freq, t);
+          g.gain.linearRampToValueAtTime(0.22, t + 0.03);
+        } else {
+          osc.frequency.linearRampToValueAtTime(freq, t + stepSec);
+        }
+        wasSounding = true;
+      }
+    }
+    g.gain.linearRampToValueAtTime(0.0001, t0 + WAVE_DURATION_MS / 1000);
+    osc.start(t0);
+    osc.stop(t0 + WAVE_DURATION_MS / 1000 + 0.1);
+    waveOsc = osc; waveGain = g; waveActive = true;
+    document.getElementById('wavePlay').disabled = true;
+    waveTimeout = setTimeout(function () { waveOsc = null; waveGain = null; waveActive = false; document.getElementById('wavePlay').disabled = false; }, WAVE_DURATION_MS + 200);
+  });
+  document.getElementById('waveClear').addEventListener('click', function () {
+    fillPaper(wvCtx, waveCanvas);
+    waveHeights = new Array(WAVE_COLS).fill(null);
+    playClick();
+  });
+  document.getElementById('waveSave').addEventListener('click', function () {
+    waveCanvas.toBlob(function (blob) { if (blob) saveBlob(blob, '나의_소리물결.png'); }, 'image/png');
+  });
+
+  /* ================= WEATHER SOUNDSCAPE TAB (날씨 스티커를 붙이면 소리가 쌓입니다) ================= */
+  var weatherCanvas = document.getElementById('weatherCanvas');
+  var wthCtx = weatherCanvas.getContext('2d');
+  fillPaper(wthCtx, weatherCanvas);
+
+  var WEATHER = ['☀️', '☁️', '🌧️', '⚡', '🌈', '💨'];
+  var currentWeather = WEATHER[0];
+  var weatherButtonsEl = document.getElementById('weatherButtons');
+  WEATHER.forEach(function (emoji, idx) {
+    var b = document.createElement('button');
+    b.className = 'stamp-btn';
+    b.textContent = emoji;
+    b.setAttribute('aria-pressed', String(idx === 0));
+    b.addEventListener('click', function () {
+      Array.prototype.forEach.call(weatherButtonsEl.children, function (c) { c.setAttribute('aria-pressed', 'false'); });
+      b.setAttribute('aria-pressed', 'true');
+      currentWeather = emoji;
+      playClick();
+    });
+    weatherButtonsEl.appendChild(b);
+  });
+  buildSwatches(document.getElementById('weatherSwatches'), function (hex) {
+    wthCtx.fillStyle = hex;
+    wthCtx.fillRect(0, 0, weatherCanvas.width, weatherCanvas.height);
+  }, null);
+
+  function weatherSound(type) {
+    if (type === '☀️') { playTone({ freq: 1046.5, type: 'sine', duration: .16, gain: .16 }); playTone({ freq: 1568, type: 'sine', duration: .18, gain: .14, delay: .08 }); }
+    else if (type === '☁️') { playTone({ freq: 260, type: 'sine', duration: .3, gain: .12 }); }
+    else if (type === '🌧️') { [0, .06, .12, .18].forEach(function (d) { playTone({ freq: 1400 + Math.random() * 500, type: 'sine', duration: .05, gain: .1, delay: d }); }); }
+    else if (type === '⚡') { playTone({ freq: 900, type: 'square', duration: .08, gain: .18, sweepTo: 120 }); }
+    else if (type === '🌈') { [1, 2, 3, 4].forEach(function (i, idx) { playTone({ freq: PENTATONIC[i], type: 'triangle', duration: .18, gain: .18, delay: idx * .09 }); }); }
+    else if (type === '💨') { playTone({ freq: 500, type: 'sine', duration: .4, gain: .14, sweepTo: 120 }); }
+  }
+
+  var weatherPlaced = [];
+  weatherCanvas.addEventListener('pointerdown', function (e) {
+    var pt = canvasPoint(weatherCanvas, e);
+    var size = 70 + Math.random() * 30, angle = (Math.random() * 30 - 15) * Math.PI / 180;
+    wthCtx.save();
+    wthCtx.translate(pt.x, pt.y);
+    wthCtx.rotate(angle);
+    wthCtx.font = size + 'px sans-serif';
+    wthCtx.textAlign = 'center'; wthCtx.textBaseline = 'middle';
+    wthCtx.fillText(currentWeather, 0, 0);
+    wthCtx.restore();
+    weatherSound(currentWeather);
+    weatherPlaced.push(currentWeather);
+  });
+
+  document.getElementById('weatherPlay').addEventListener('click', function () {
+    if (!weatherPlaced.length) { showToast('스티커를 먼저 붙여보세요! 🌤️'); return; }
+    weatherPlaced.forEach(function (type, i) { setTimeout(function () { weatherSound(type); }, i * 260); });
+  });
+  document.getElementById('weatherClear').addEventListener('click', function () {
+    fillPaper(wthCtx, weatherCanvas);
+    weatherPlaced = [];
+    playClick();
+  });
+  document.getElementById('weatherSave').addEventListener('click', function () {
+    weatherCanvas.toBlob(function (blob) { if (blob) saveBlob(blob, '나의_소리풍경.png'); }, 'image/png');
+  });
+
+  /* ================= ANIMAL CHOIR TAB (놓은 동물들이 돌아가며 노래해요) ================= */
+  var animalsCanvas = document.getElementById('animalsCanvas');
+  var anCtx = animalsCanvas.getContext('2d');
+  fillPaper(anCtx, animalsCanvas);
+
+  var ANIMALS = ['🐱', '🐶', '🐮', '🐦', '🐷', '🐸'];
+  var ANIMAL_VOICES = {
+    '🐱': function () { playTone({ freq: 400, sweepTo: 700, duration: .25, type: 'sine', gain: .2 }); },
+    '🐶': function () { playTone({ freq: 200, sweepTo: 140, duration: .12, type: 'square', gain: .25 }); },
+    '🐮': function () { playTone({ freq: 110, sweepTo: 90, duration: .5, type: 'sawtooth', gain: .2 }); },
+    '🐦': function () { [0, .08].forEach(function (d, i) { playTone({ freq: i === 0 ? 1800 : 2100, duration: .08, type: 'sine', gain: .15, delay: d }); }); },
+    '🐷': function () { playTone({ freq: 260, sweepTo: 320, duration: .15, type: 'square', gain: .2 }); },
+    '🐸': function () { [0, .12].forEach(function (d) { playTone({ freq: 180, sweepTo: 260, duration: .1, type: 'sawtooth', gain: .2, delay: d }); }); }
+  };
+  var currentAnimal = ANIMALS[0];
+  var animalButtonsEl = document.getElementById('animalButtons');
+  ANIMALS.forEach(function (emoji, idx) {
+    var b = document.createElement('button');
+    b.className = 'stamp-btn';
+    b.textContent = emoji;
+    b.setAttribute('aria-pressed', String(idx === 0));
+    b.addEventListener('click', function () {
+      Array.prototype.forEach.call(animalButtonsEl.children, function (c) { c.setAttribute('aria-pressed', 'false'); });
+      b.setAttribute('aria-pressed', 'true');
+      currentAnimal = emoji;
+      playClick();
+    });
+    animalButtonsEl.appendChild(b);
+  });
+
+  var animalsOnStage = [];
+  animalsCanvas.addEventListener('pointerdown', function (e) {
+    var pt = canvasPoint(animalsCanvas, e);
+    var size = 70 + Math.random() * 30, angle = (Math.random() * 24 - 12) * Math.PI / 180;
+    anCtx.save();
+    anCtx.translate(pt.x, pt.y);
+    anCtx.rotate(angle);
+    anCtx.font = size + 'px sans-serif';
+    anCtx.textAlign = 'center'; anCtx.textBaseline = 'middle';
+    anCtx.fillText(currentAnimal, 0, 0);
+    anCtx.restore();
+    ANIMAL_VOICES[currentAnimal]();
+    if (animalsOnStage.indexOf(currentAnimal) === -1) animalsOnStage.push(currentAnimal);
+  });
+
+  var choirActive = false, choirTimer = null, choirIdx = 0;
+  function stopAnimalChoir() {
+    if (!choirActive) return;
+    choirActive = false;
+    clearInterval(choirTimer); choirTimer = null;
+    document.getElementById('animalsPlay').textContent = '🎤 다같이 노래해요';
+  }
+  document.getElementById('animalsPlay').addEventListener('click', function () {
+    if (choirActive) { stopAnimalChoir(); playClick(); return; }
+    if (!animalsOnStage.length) { showToast('동물 친구를 먼저 놓아주세요! 🐾'); return; }
+    choirActive = true;
+    choirIdx = 0;
+    document.getElementById('animalsPlay').textContent = '⏹️ 그만할래요';
+    ANIMAL_VOICES[animalsOnStage[0]]();
+    choirTimer = setInterval(function () {
+      choirIdx = (choirIdx + 1) % animalsOnStage.length;
+      ANIMAL_VOICES[animalsOnStage[choirIdx]]();
+    }, 450);
+  });
+  document.getElementById('animalsClear').addEventListener('click', function () {
+    fillPaper(anCtx, animalsCanvas);
+    animalsOnStage = [];
+    stopAnimalChoir();
+    playClick();
+  });
+  document.getElementById('animalsSave').addEventListener('click', function () {
+    animalsCanvas.toBlob(function (blob) { if (blob) saveBlob(blob, '나의_동물합창단.png'); }, 'image/png');
+  });
+
+  /* ================= RHYTHM BAND TAB (색칠한 칸이 리듬이 됩니다) ================= */
+  var rhythmCanvas = document.getElementById('rhythmCanvas');
+  var rhCtx = rhythmCanvas.getContext('2d');
+  var RHYTHM_ROWS = [
+    function () { playTone({ freq: 150, sweepTo: 50, duration: .18, type: 'sine', gain: .3 }); },
+    function () { playNoiseBurst(.12, .22, 1800); },
+    function () { playNoiseBurst(.05, .12, 6000); },
+    function () { playTone({ freq: 2637, duration: .35, type: 'sine', gain: .12 }); },
+    function () { playNoiseBurst(.08, .14, 4000); },
+    function () { playTone({ freq: 800, duration: .05, type: 'square', gain: .18 }); }
+  ];
+  var RHYTHM_COLS = 8;
+  var rhythmGrid = [];
+  for (var rr = 0; rr < RHYTHM_ROWS.length; rr++) rhythmGrid.push(new Array(RHYTHM_COLS).fill(null));
+
+  var rhythmColor = '#FF9142';
+  buildSwatches(document.getElementById('rhythmSwatches'), function (hex) { rhythmColor = hex; }, rhythmColor);
+
+  function drawRhythm(playCol) {
+    var cw = rhythmCanvas.width / RHYTHM_COLS, ch = rhythmCanvas.height / RHYTHM_ROWS.length;
+    fillPaper(rhCtx, rhythmCanvas);
+    if (typeof playCol === 'number') {
+      rhCtx.fillStyle = 'rgba(255,111,89,0.16)';
+      rhCtx.fillRect(playCol * cw, 0, cw, rhythmCanvas.height);
+    }
+    rhCtx.strokeStyle = 'rgba(38,51,44,0.18)';
+    rhCtx.lineWidth = 2;
+    for (var i = 0; i <= RHYTHM_COLS; i++) { rhCtx.beginPath(); rhCtx.moveTo(i * cw, 0); rhCtx.lineTo(i * cw, rhythmCanvas.height); rhCtx.stroke(); }
+    for (var j = 0; j <= RHYTHM_ROWS.length; j++) { rhCtx.beginPath(); rhCtx.moveTo(0, j * ch); rhCtx.lineTo(rhythmCanvas.width, j * ch); rhCtx.stroke(); }
+    var pad = 8;
+    for (var r = 0; r < RHYTHM_ROWS.length; r++) {
+      for (var c = 0; c < RHYTHM_COLS; c++) {
+        var color = rhythmGrid[r][c];
+        if (!color) continue;
+        rhCtx.fillStyle = color;
+        rhCtx.strokeStyle = '#26332C';
+        rhCtx.lineWidth = 3;
+        rhCtx.beginPath();
+        if (rhCtx.roundRect) rhCtx.roundRect(c * cw + pad, r * ch + pad, cw - pad * 2, ch - pad * 2, 14);
+        else rhCtx.rect(c * cw + pad, r * ch + pad, cw - pad * 2, ch - pad * 2);
+        rhCtx.fill();
+        rhCtx.stroke();
+      }
+    }
+  }
+  drawRhythm(null);
+
+  function rhythmCellAt(pt) {
+    var col = Math.floor(pt.x / (rhythmCanvas.width / RHYTHM_COLS));
+    var row = Math.floor(pt.y / (rhythmCanvas.height / RHYTHM_ROWS.length));
+    if (col < 0 || col >= RHYTHM_COLS || row < 0 || row >= RHYTHM_ROWS.length) return null;
+    return { row: row, col: col };
+  }
+  rhythmCanvas.addEventListener('pointerdown', function (e) {
+    var cell = rhythmCellAt(canvasPoint(rhythmCanvas, e));
+    if (!cell) return;
+    var cur = rhythmGrid[cell.row][cell.col];
+    rhythmGrid[cell.row][cell.col] = (cur === rhythmColor) ? null : rhythmColor;
+    if (rhythmGrid[cell.row][cell.col]) RHYTHM_ROWS[cell.row](); else playClick();
+    drawRhythm(rhythmActive ? rhythmCol : null);
+  });
+
+  var rhythmActive = false, rhythmCol = 0, rhythmTimer = null;
+  var RHYTHM_STEP_MS = 300;
+  function rhythmTick() {
+    for (var r = 0; r < RHYTHM_ROWS.length; r++) { if (rhythmGrid[r][rhythmCol]) RHYTHM_ROWS[r](); }
+    drawRhythm(rhythmCol);
+    rhythmCol = (rhythmCol + 1) % RHYTHM_COLS;
+  }
+  function stopRhythm() {
+    if (!rhythmActive) return;
+    rhythmActive = false;
+    clearInterval(rhythmTimer); rhythmTimer = null;
+    document.getElementById('rhythmPlay').textContent = '▶️ 재생하기';
+    drawRhythm(null);
+  }
+  document.getElementById('rhythmPlay').addEventListener('click', function () {
+    if (rhythmActive) { stopRhythm(); playClick(); return; }
+    rhythmActive = true;
+    rhythmCol = 0;
+    document.getElementById('rhythmPlay').textContent = '⏹️ 멈추기';
+    rhythmTick();
+    rhythmTimer = setInterval(rhythmTick, RHYTHM_STEP_MS);
+  });
+  document.getElementById('rhythmClear').addEventListener('click', function () {
+    rhythmGrid.forEach(function (row) { row.fill(null); });
+    drawRhythm(rhythmActive ? rhythmCol : null);
+    playClick();
+  });
+  document.getElementById('rhythmSave').addEventListener('click', function () {
+    rhythmCanvas.toBlob(function (blob) { if (blob) saveBlob(blob, '나의_리듬밴드.png'); }, 'image/png');
   });
 
   /* ================= TRACING TAB ================= */
