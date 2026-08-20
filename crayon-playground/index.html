@@ -265,6 +265,8 @@
       <button class="tab-btn" role="tab" data-tab="symmetry" aria-selected="false"><span class="ic">🌀</span>대칭그리기</button>
       <button class="tab-btn" role="tab" data-tab="dot" aria-selected="false"><span class="ic">🔵</span>점묘화</button>
       <button class="tab-btn" role="tab" data-tab="music" aria-selected="false"><span class="ic">🎵</span>악기그리기</button>
+      <button class="tab-btn" role="tab" data-tab="seq" aria-selected="false"><span class="ic">🎼</span>노래그림</button>
+      <button class="tab-btn" role="tab" data-tab="musicbox" aria-selected="false"><span class="ic">🎠</span>소리오르골</button>
       <button class="tab-btn" role="tab" data-tab="trace" aria-selected="false"><span class="ic">✍️</span>따라그리기</button>
       <button class="tab-btn" role="tab" data-tab="coop" aria-selected="false"><span class="ic">🤝</span>협동색칠</button>
     </nav>
@@ -543,6 +545,48 @@
       </div>
     </section>
 
+    <!-- ===================== SINGING GRID PANEL ===================== -->
+    <section id="panel-seq" class="panel" data-panel role="tabpanel" hidden>
+      <p class="hint">칸을 콕콕 눌러 색칠하면 나만의 노래가 만들어져요. ▶️ 재생을 눌러 들어보세요!</p>
+      <div class="workspace">
+        <div class="stage-wrap">
+          <div class="stage" id="seqStage"><canvas class="stage-canvas" id="seqCanvas" width="960" height="960"></canvas></div>
+        </div>
+        <div class="tray">
+          <div class="tray-section">
+            <h2>색깔 고르기</h2>
+            <div class="swatches" id="seqSwatches" role="group" aria-label="색깔 고르기"></div>
+          </div>
+          <div class="tray-section actions">
+            <button class="btn btn-primary" id="seqPlay">▶️ 재생하기</button>
+            <button class="btn btn-ghost" id="seqClear">🔄 지우기</button>
+            <button class="btn btn-ghost" id="seqSave">💾 저장하기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== SOUND MUSIC BOX PANEL ===================== -->
+    <section id="panel-musicbox" class="panel" data-panel role="tabpanel" hidden>
+      <p class="hint">동그라미를 눌러 색칠하면 소리오르골이 되어요. 안쪽은 반짝이 소리, 가운데는 노래 소리, 바깥쪽은 쿵쿵 소리예요!</p>
+      <div class="workspace">
+        <div class="stage-wrap">
+          <div class="stage" id="mbStage"><canvas class="stage-canvas" id="mbCanvas" width="960" height="960"></canvas></div>
+        </div>
+        <div class="tray">
+          <div class="tray-section">
+            <h2>색깔 고르기</h2>
+            <div class="swatches" id="mbSwatches" role="group" aria-label="색깔 고르기"></div>
+          </div>
+          <div class="tray-section actions">
+            <button class="btn btn-primary" id="mbPlay">▶️ 재생하기</button>
+            <button class="btn btn-ghost" id="mbClear">🔄 지우기</button>
+            <button class="btn btn-ghost" id="mbSave">💾 저장하기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ===================== TRACING PANEL ===================== -->
     <section id="panel-trace" class="panel" data-panel role="tabpanel" hidden>
       <p class="hint">점선을 따라 손가락으로 그어보세요. 다 그으면 소리로 칭찬해줘요!</p>
@@ -786,6 +830,8 @@
     symmetry: document.getElementById('panel-symmetry'),
     dot: document.getElementById('panel-dot'),
     music: document.getElementById('panel-music'),
+    seq: document.getElementById('panel-seq'),
+    musicbox: document.getElementById('panel-musicbox'),
     trace: document.getElementById('panel-trace'),
     coop: document.getElementById('panel-coop')
   };
@@ -796,6 +842,7 @@
       Object.keys(panels).forEach(function (key) { panels[key].hidden = key !== tab; });
       stopScribble();
       isDrawing = false; symDrawing = false; dotDrawing = false; musicPlaying = false; traceDrawing = false;
+      stopSeq(); stopMusicBox();
       playClick();
     });
   });
@@ -1230,6 +1277,216 @@
   document.getElementById('musicClear').addEventListener('click', function () { drawMusicBackground(); playClick(); });
   document.getElementById('musicSave').addEventListener('click', function () {
     musicCanvas.toBlob(function (blob) { if (blob) saveBlob(blob, '나의_악기그림.png'); }, 'image/png');
+  });
+
+  /* ================= SINGING GRID TAB (그림을 그리면 노래가 됩니다) ================= */
+  var seqCanvas = document.getElementById('seqCanvas');
+  var seqCtx = seqCanvas.getContext('2d');
+  var SEQ_COLS = 10, SEQ_ROWS = 10;
+  var SEQ_NOTES = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00];
+  var seqGrid = [];
+  for (var sr = 0; sr < SEQ_ROWS; sr++) seqGrid.push(new Array(SEQ_COLS).fill(null));
+
+  var seqColor = '#F14B4B';
+  buildSwatches(document.getElementById('seqSwatches'), function (hex) { seqColor = hex; }, seqColor);
+
+  function noteForRow(row) { return SEQ_NOTES[SEQ_ROWS - 1 - row]; }
+
+  function drawSeq(playCol) {
+    var cw = seqCanvas.width / SEQ_COLS, ch = seqCanvas.height / SEQ_ROWS;
+    fillPaper(seqCtx, seqCanvas);
+    if (typeof playCol === 'number') {
+      seqCtx.fillStyle = 'rgba(255,111,89,0.16)';
+      seqCtx.fillRect(playCol * cw, 0, cw, seqCanvas.height);
+    }
+    seqCtx.strokeStyle = 'rgba(38,51,44,0.18)';
+    seqCtx.lineWidth = 2;
+    for (var i = 0; i <= SEQ_COLS; i++) {
+      seqCtx.beginPath(); seqCtx.moveTo(i * cw, 0); seqCtx.lineTo(i * cw, seqCanvas.height); seqCtx.stroke();
+    }
+    for (var j = 0; j <= SEQ_ROWS; j++) {
+      seqCtx.beginPath(); seqCtx.moveTo(0, j * ch); seqCtx.lineTo(seqCanvas.width, j * ch); seqCtx.stroke();
+    }
+    var pad = 8;
+    for (var r = 0; r < SEQ_ROWS; r++) {
+      for (var c = 0; c < SEQ_COLS; c++) {
+        var color = seqGrid[r][c];
+        if (!color) continue;
+        seqCtx.fillStyle = color;
+        seqCtx.strokeStyle = '#26332C';
+        seqCtx.lineWidth = 3;
+        seqCtx.beginPath();
+        if (seqCtx.roundRect) seqCtx.roundRect(c * cw + pad, r * ch + pad, cw - pad * 2, ch - pad * 2, 14);
+        else seqCtx.rect(c * cw + pad, r * ch + pad, cw - pad * 2, ch - pad * 2);
+        seqCtx.fill();
+        seqCtx.stroke();
+      }
+    }
+  }
+  drawSeq(null);
+
+  function seqCellAt(pt) {
+    var col = Math.floor(pt.x / (seqCanvas.width / SEQ_COLS));
+    var row = Math.floor(pt.y / (seqCanvas.height / SEQ_ROWS));
+    if (col < 0 || col >= SEQ_COLS || row < 0 || row >= SEQ_ROWS) return null;
+    return { row: row, col: col };
+  }
+  seqCanvas.addEventListener('pointerdown', function (e) {
+    var cell = seqCellAt(canvasPoint(seqCanvas, e));
+    if (!cell) return;
+    var cur = seqGrid[cell.row][cell.col];
+    seqGrid[cell.row][cell.col] = (cur === seqColor) ? null : seqColor;
+    if (seqGrid[cell.row][cell.col]) playTone({ freq: noteForRow(cell.row), duration: 0.22, type: 'triangle', gain: 0.2 });
+    else playClick();
+    drawSeq(seqActive ? seqPlayCol : null);
+  });
+
+  var seqActive = false, seqPlayCol = 0, seqTimer = null;
+  var SEQ_STEP_MS = 380;
+  function seqTick() {
+    for (var r = 0; r < SEQ_ROWS; r++) {
+      if (seqGrid[r][seqPlayCol]) playTone({ freq: noteForRow(r), duration: 0.22, type: 'triangle', gain: 0.2 });
+    }
+    drawSeq(seqPlayCol);
+    seqPlayCol = (seqPlayCol + 1) % SEQ_COLS;
+  }
+  function stopSeq() {
+    if (!seqActive) return;
+    seqActive = false;
+    clearInterval(seqTimer); seqTimer = null;
+    document.getElementById('seqPlay').textContent = '▶️ 재생하기';
+    drawSeq(null);
+  }
+  document.getElementById('seqPlay').addEventListener('click', function () {
+    if (seqActive) { stopSeq(); playClick(); return; }
+    seqActive = true;
+    seqPlayCol = 0;
+    document.getElementById('seqPlay').textContent = '⏹️ 멈추기';
+    seqTick();
+    seqTimer = setInterval(seqTick, SEQ_STEP_MS);
+  });
+  document.getElementById('seqClear').addEventListener('click', function () {
+    seqGrid.forEach(function (row) { row.fill(null); });
+    drawSeq(seqActive ? seqPlayCol : null);
+    playClick();
+  });
+  document.getElementById('seqSave').addEventListener('click', function () {
+    seqCanvas.toBlob(function (blob) { if (blob) saveBlob(blob, '나의_노래그림.png'); }, 'image/png');
+  });
+
+  /* ================= SOUND MUSIC BOX TAB (오르골처럼 돌아가며 소리 나는 그림) ================= */
+  var mbCanvas = document.getElementById('mbCanvas');
+  var mbCtx = mbCanvas.getContext('2d');
+  var MB_CX = 480, MB_CY = 480, MB_SLOTS = 12;
+  var MB_RADII = [180, 300, 420];
+  var MB_TONES = [
+    { freq: 1318.51, type: 'sine', duration: 0.14, gain: 0.16 },              // 안쪽: 반짝이 소리
+    { freq: 659.25, type: 'triangle', duration: 0.22, gain: 0.2 },            // 가운데: 노래 소리
+    { freq: 180, type: 'sine', duration: 0.18, gain: 0.25, sweepTo: 60 }      // 바깥쪽: 쿵쿵 소리
+  ];
+  var mbCells = [[], [], []];
+  for (var mi = 0; mi < 3; mi++) mbCells[mi] = new Array(MB_SLOTS).fill(null);
+
+  var mbColor = '#8E6FD1';
+  buildSwatches(document.getElementById('mbSwatches'), function (hex) { mbColor = hex; }, mbColor);
+
+  function mbPolar(angle, radius) {
+    var a = angle - Math.PI / 2;
+    return { x: MB_CX + Math.cos(a) * radius, y: MB_CY + Math.sin(a) * radius };
+  }
+  function drawMusicBox(handAngle) {
+    fillPaper(mbCtx, mbCanvas);
+    mbCtx.strokeStyle = 'rgba(38,51,44,0.25)';
+    mbCtx.lineWidth = 3;
+    MB_RADII.forEach(function (r) { mbCtx.beginPath(); mbCtx.arc(MB_CX, MB_CY, r, 0, Math.PI * 2); mbCtx.stroke(); });
+    for (var s = 0; s < MB_SLOTS; s++) {
+      var a = (Math.PI * 2 / MB_SLOTS) * s;
+      var inner = mbPolar(a, MB_RADII[0] - 40), outer = mbPolar(a, MB_RADII[2] + 40);
+      mbCtx.beginPath(); mbCtx.moveTo(inner.x, inner.y); mbCtx.lineTo(outer.x, outer.y); mbCtx.stroke();
+    }
+    for (var ring = 0; ring < 3; ring++) {
+      for (var slot = 0; slot < MB_SLOTS; slot++) {
+        var color = mbCells[ring][slot];
+        var a2 = (Math.PI * 2 / MB_SLOTS) * slot;
+        var p = mbPolar(a2, MB_RADII[ring]);
+        mbCtx.beginPath();
+        mbCtx.arc(p.x, p.y, 34, 0, Math.PI * 2);
+        mbCtx.fillStyle = color || '#FFFFFF';
+        mbCtx.fill();
+        mbCtx.strokeStyle = '#26332C';
+        mbCtx.lineWidth = 4;
+        mbCtx.stroke();
+      }
+    }
+    mbCtx.beginPath(); mbCtx.arc(MB_CX, MB_CY, 22, 0, Math.PI * 2); mbCtx.fillStyle = '#26332C'; mbCtx.fill();
+    if (typeof handAngle === 'number') {
+      var tip = mbPolar(handAngle, MB_RADII[2] + 30);
+      mbCtx.strokeStyle = '#FF6F59';
+      mbCtx.lineWidth = 8;
+      mbCtx.lineCap = 'round';
+      mbCtx.beginPath(); mbCtx.moveTo(MB_CX, MB_CY); mbCtx.lineTo(tip.x, tip.y); mbCtx.stroke();
+    }
+  }
+  drawMusicBox(null);
+
+  function mbCellAt(pt) {
+    var dx = pt.x - MB_CX, dy = pt.y - MB_CY;
+    var dist = Math.hypot(dx, dy);
+    var ringIdx = -1, best = 9999;
+    MB_RADII.forEach(function (r, i) { var d = Math.abs(dist - r); if (d < best) { best = d; ringIdx = i; } });
+    if (best > 45) return null;
+    var angle = Math.atan2(dy, dx) + Math.PI / 2;
+    if (angle < 0) angle += Math.PI * 2;
+    var slot = Math.round(angle / (Math.PI * 2 / MB_SLOTS)) % MB_SLOTS;
+    return { ring: ringIdx, slot: slot };
+  }
+  mbCanvas.addEventListener('pointerdown', function (e) {
+    var cell = mbCellAt(canvasPoint(mbCanvas, e));
+    if (!cell) return;
+    var cur = mbCells[cell.ring][cell.slot];
+    mbCells[cell.ring][cell.slot] = (cur === mbColor) ? null : mbColor;
+    if (mbCells[cell.ring][cell.slot]) playTone(MB_TONES[cell.ring]); else playClick();
+    drawMusicBox(mbActive ? mbAngle : null);
+  });
+
+  var mbActive = false, mbAngle = 0, mbLastSlot = -1, mbLastFrameTime = 0;
+  var MB_PERIOD_MS = 6000;
+  function mbLoop(ts) {
+    if (!mbActive) return;
+    if (!mbLastFrameTime) mbLastFrameTime = ts;
+    var dt = ts - mbLastFrameTime;
+    mbLastFrameTime = ts;
+    mbAngle += (dt / MB_PERIOD_MS) * Math.PI * 2;
+    if (mbAngle >= Math.PI * 2) mbAngle -= Math.PI * 2;
+    var slot = Math.floor(mbAngle / (Math.PI * 2 / MB_SLOTS)) % MB_SLOTS;
+    if (slot !== mbLastSlot) {
+      mbLastSlot = slot;
+      for (var ring = 0; ring < 3; ring++) { if (mbCells[ring][slot]) playTone(MB_TONES[ring]); }
+    }
+    drawMusicBox(mbAngle);
+    requestAnimationFrame(mbLoop);
+  }
+  function stopMusicBox() {
+    if (!mbActive) return;
+    mbActive = false;
+    document.getElementById('mbPlay').textContent = '▶️ 재생하기';
+    drawMusicBox(null);
+  }
+  document.getElementById('mbPlay').addEventListener('click', function () {
+    if (mbActive) { stopMusicBox(); playClick(); return; }
+    mbActive = true;
+    mbLastFrameTime = 0;
+    mbLastSlot = -1;
+    document.getElementById('mbPlay').textContent = '⏹️ 멈추기';
+    requestAnimationFrame(mbLoop);
+  });
+  document.getElementById('mbClear').addEventListener('click', function () {
+    mbCells.forEach(function (ring) { ring.fill(null); });
+    drawMusicBox(mbActive ? mbAngle : null);
+    playClick();
+  });
+  document.getElementById('mbSave').addEventListener('click', function () {
+    mbCanvas.toBlob(function (blob) { if (blob) saveBlob(blob, '나의_소리오르골.png'); }, 'image/png');
   });
 
   /* ================= TRACING TAB ================= */
