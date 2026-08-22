@@ -272,6 +272,11 @@
       <button class="tab-btn" role="tab" data-tab="weather" aria-selected="false"><span class="ic">🌦️</span>소리풍경</button>
       <button class="tab-btn" role="tab" data-tab="animals" aria-selected="false"><span class="ic">🐾</span>동물합창단</button>
       <button class="tab-btn" role="tab" data-tab="rhythm" aria-selected="false"><span class="ic">🥁</span>리듬밴드</button>
+      <button class="tab-btn" role="tab" data-tab="bubble" aria-selected="false"><span class="ic">🫧</span>비눗방울소리</button>
+      <button class="tab-btn" role="tab" data-tab="chord" aria-selected="false"><span class="ic">🎨</span>색깔화음</button>
+      <button class="tab-btn" role="tab" data-tab="garden" aria-selected="false"><span class="ic">🌱</span>소리정원</button>
+      <button class="tab-btn" role="tab" data-tab="journey" aria-selected="false"><span class="ic">🛤️</span>소리지도여행</button>
+      <button class="tab-btn" role="tab" data-tab="bottles" aria-selected="false"><span class="ic">🍾</span>물병실로폰</button>
       <button class="tab-btn" role="tab" data-tab="trace" aria-selected="false"><span class="ic">✍️</span>따라그리기</button>
       <button class="tab-btn" role="tab" data-tab="coop" aria-selected="false"><span class="ic">🤝</span>협동색칠</button>
     </nav>
@@ -734,6 +739,113 @@
       </div>
     </section>
 
+    <!-- ===================== BUBBLE MELODY PANEL ===================== -->
+    <section id="panel-bubble" class="panel" data-panel role="tabpanel" hidden>
+      <p class="hint">화면을 누르면 비눗방울이 생겨요. 작은 방울은 높은 소리, 큰 방울은 낮은 소리가 나요!</p>
+      <div class="workspace">
+        <div class="stage-wrap">
+          <div class="stage" id="bubbleStage"><canvas class="stage-canvas" id="bubbleCanvas" width="960" height="960"></canvas></div>
+        </div>
+        <div class="tray">
+          <div class="tray-section">
+            <h2>방울 크기</h2>
+            <div class="size-row" role="group" aria-label="방울 크기">
+              <button class="size-btn bubble-size-btn" data-size="26" aria-pressed="false"><span class="dot" style="width:8px;height:8px"></span></button>
+              <button class="size-btn bubble-size-btn" data-size="46" aria-pressed="true"><span class="dot" style="width:16px;height:16px"></span></button>
+              <button class="size-btn bubble-size-btn" data-size="70" aria-pressed="false"><span class="dot" style="width:26px;height:26px"></span></button>
+            </div>
+          </div>
+          <div class="tray-section actions">
+            <button class="btn btn-primary" id="bubblePlay">🎈 다 같이 톡톡</button>
+            <button class="btn btn-ghost" id="bubbleClear">🔄 지우기</button>
+            <button class="btn btn-ghost" id="bubbleSave">💾 저장하기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== COLOR CHORD PANEL ===================== -->
+    <section id="panel-chord" class="panel" data-panel role="tabpanel" hidden>
+      <p class="hint">색을 겹쳐서 자유롭게 칠해보세요. 그림을 콕 누르면 그 자리의 색이 화음(여러 음을 한번에)이 되어 들려요!</p>
+      <div class="workspace">
+        <div class="stage-wrap">
+          <div class="stage" id="chordStage"><canvas class="stage-canvas" id="chordCanvas" width="960" height="960"></canvas></div>
+        </div>
+        <div class="tray">
+          <div class="tray-section">
+            <h2>색깔 고르기</h2>
+            <div class="swatches" id="chordSwatches" role="group" aria-label="색깔 고르기"></div>
+          </div>
+          <div class="tray-section actions">
+            <button class="btn btn-ghost" id="chordClear">🔄 지우기</button>
+            <button class="btn btn-ghost" id="chordSave">💾 저장하기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== SOUND GARDEN PANEL ===================== -->
+    <section id="panel-garden" class="panel" data-panel role="tabpanel" hidden>
+      <p class="hint">같은 자리를 여러 번 누르면 꽃이 쑥쑥 자라면서 소리도 점점 높아져요. 여기저기 심어서 정원을 만들어보세요!</p>
+      <div class="workspace">
+        <div class="stage-wrap">
+          <div class="stage" id="gardenStage"><canvas class="stage-canvas" id="gardenCanvas" width="960" height="960"></canvas></div>
+        </div>
+        <div class="tray">
+          <div class="tray-section">
+            <h2>꽃 색깔</h2>
+            <div class="swatches" id="gardenSwatches" role="group" aria-label="꽃 색깔"></div>
+          </div>
+          <div class="tray-section actions">
+            <button class="btn btn-primary" id="gardenPlay">🌼 정원 노래 듣기</button>
+            <button class="btn btn-ghost" id="gardenClear">🔄 지우기</button>
+            <button class="btn btn-ghost" id="gardenSave">💾 저장하기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== SOUND PATH JOURNEY PANEL ===================== -->
+    <section id="panel-journey" class="panel" data-panel role="tabpanel" hidden>
+      <p class="hint">길을 그리고, 그 위에 표지판을 놓아보세요. ▶️ 를 누르면 친구가 길을 따라가며 표지판마다 소리를 내요!</p>
+      <div class="workspace">
+        <div class="stage-wrap">
+          <div class="stage" id="journeyStage"><canvas class="stage-canvas" id="journeyCanvas" width="960" height="960"></canvas></div>
+        </div>
+        <div class="tray">
+          <div class="tray-section">
+            <h2>표지판 고르기</h2>
+            <div class="stamp-row" id="journeyButtons" role="group" aria-label="표지판 고르기"></div>
+          </div>
+          <div class="tray-section actions">
+            <button class="btn btn-primary" id="journeyPlay">▶️ 여행 떠나기</button>
+            <button class="btn btn-ghost" id="journeyClear">🔄 지우기</button>
+            <button class="btn btn-ghost" id="journeySave">💾 저장하기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== WATER BOTTLE XYLOPHONE PANEL ===================== -->
+    <section id="panel-bottles" class="panel" data-panel role="tabpanel" hidden>
+      <p class="hint">병 안을 눌러서 물 높이를 정해보세요. 물이 많으면 낮은 소리, 적으면 높은 소리가 나요. 진짜 물병 실로폰처럼요!</p>
+      <div class="workspace">
+        <div class="stage-wrap">
+          <div class="stage" id="bottlesStage"><canvas class="stage-canvas" id="bottlesCanvas" width="960" height="960"></canvas></div>
+        </div>
+        <div class="tray">
+          <div class="tray-section">
+            <h2>물 색깔</h2>
+            <div class="swatches" id="bottlesSwatches" role="group" aria-label="물 색깔"></div>
+          </div>
+          <div class="tray-section actions">
+            <button class="btn btn-ghost" id="bottlesClear">🔄 지우기</button>
+            <button class="btn btn-ghost" id="bottlesSave">💾 저장하기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ===================== TRACING PANEL ===================== -->
     <section id="panel-trace" class="panel" data-panel role="tabpanel" hidden>
       <p class="hint">점선을 따라 손가락으로 그어보세요. 다 그으면 소리로 칭찬해줘요!</p>
@@ -1001,6 +1113,11 @@
     weather: document.getElementById('panel-weather'),
     animals: document.getElementById('panel-animals'),
     rhythm: document.getElementById('panel-rhythm'),
+    bubble: document.getElementById('panel-bubble'),
+    chord: document.getElementById('panel-chord'),
+    garden: document.getElementById('panel-garden'),
+    journey: document.getElementById('panel-journey'),
+    bottles: document.getElementById('panel-bottles'),
     trace: document.getElementById('panel-trace'),
     coop: document.getElementById('panel-coop')
   };
@@ -1011,7 +1128,7 @@
       Object.keys(panels).forEach(function (key) { panels[key].hidden = key !== tab; });
       stopScribble();
       isDrawing = false; symDrawing = false; dotDrawing = false; musicPlaying = false; traceDrawing = false;
-      stopSeq(); stopMusicBox(); stopWave(); stopAnimalChoir(); stopRhythm();
+      stopSeq(); stopMusicBox(); stopWave(); stopAnimalChoir(); stopRhythm(); stopJourney();
       playClick();
     });
   });
@@ -2007,6 +2124,370 @@
   });
   document.getElementById('rhythmSave').addEventListener('click', function () {
     rhythmCanvas.toBlob(function (blob) { if (blob) saveBlob(blob, '나의_리듬밴드.png'); }, 'image/png');
+  });
+
+  /* ================= BUBBLE MELODY TAB (방울 크기가 곧 음높이) ================= */
+  var bubbleCanvas = document.getElementById('bubbleCanvas');
+  var bbCtx = bubbleCanvas.getContext('2d');
+  fillPaper(bbCtx, bubbleCanvas);
+
+  var bubbleSize = 46;
+  Array.prototype.slice.call(document.querySelectorAll('.bubble-size-btn')).forEach(function (b) {
+    b.addEventListener('click', function () {
+      Array.prototype.forEach.call(b.parentNode.children, function (x) { x.setAttribute('aria-pressed', 'false'); });
+      b.setAttribute('aria-pressed', 'true');
+      bubbleSize = parseInt(b.getAttribute('data-size'), 10);
+      playClick();
+    });
+  });
+
+  var BUBBLE_COLORS = ['rgba(255,255,255,0.4)', 'rgba(79,179,232,0.35)', 'rgba(142,111,209,0.35)', 'rgba(63,193,163,0.35)', 'rgba(255,126,185,0.35)'];
+  var bubblesPlaced = [];
+  function bubbleFreq(size) { return 1200 - ((size - 26) / (70 - 26)) * 900; }
+  function drawBubble(x, y, size) {
+    var color = BUBBLE_COLORS[Math.floor(Math.random() * BUBBLE_COLORS.length)];
+    bbCtx.beginPath();
+    bbCtx.arc(x, y, size / 2, 0, Math.PI * 2);
+    bbCtx.fillStyle = color;
+    bbCtx.fill();
+    bbCtx.strokeStyle = 'rgba(38,51,44,0.4)';
+    bbCtx.lineWidth = 3;
+    bbCtx.stroke();
+    bbCtx.beginPath();
+    bbCtx.arc(x - size * 0.18, y - size * 0.18, size * 0.12, 0, Math.PI * 2);
+    bbCtx.fillStyle = 'rgba(255,255,255,0.85)';
+    bbCtx.fill();
+  }
+  function playBubbleTone(size) {
+    var f = bubbleFreq(size);
+    playTone({ freq: f, duration: .3, type: 'sine', gain: .18, sweepTo: f * 1.08 });
+  }
+  bubbleCanvas.addEventListener('pointerdown', function (e) {
+    var pt = canvasPoint(bubbleCanvas, e);
+    drawBubble(pt.x, pt.y, bubbleSize);
+    playBubbleTone(bubbleSize);
+    bubblesPlaced.push({ size: bubbleSize });
+  });
+  document.getElementById('bubblePlay').addEventListener('click', function () {
+    if (!bubblesPlaced.length) { showToast('방울을 먼저 만들어보세요! 🫧'); return; }
+    bubblesPlaced.forEach(function (b, i) { setTimeout(function () { playBubbleTone(b.size); }, i * 180); });
+  });
+  document.getElementById('bubbleClear').addEventListener('click', function () {
+    fillPaper(bbCtx, bubbleCanvas);
+    bubblesPlaced = [];
+    playClick();
+  });
+  document.getElementById('bubbleSave').addEventListener('click', function () {
+    bubbleCanvas.toBlob(function (blob) { if (blob) saveBlob(blob, '나의_비눗방울소리.png'); }, 'image/png');
+  });
+
+  /* ================= COLOR CHORD TAB (겹친 색이 화음이 됩니다) ================= */
+  var chordCanvas = document.getElementById('chordCanvas');
+  var chCtx = chordCanvas.getContext('2d');
+  fillPaper(chCtx, chordCanvas);
+  chCtx.lineCap = 'round'; chCtx.lineJoin = 'round';
+
+  var chordColor = '#F14B4B';
+  buildSwatches(document.getElementById('chordSwatches'), function (hex) { chordColor = hex; }, chordColor);
+
+  function playColorChord(pt) {
+    var data;
+    try {
+      var x = Math.max(0, Math.min(chordCanvas.width - 1, Math.round(pt.x)));
+      var y = Math.max(0, Math.min(chordCanvas.height - 1, Math.round(pt.y)));
+      data = chCtx.getImageData(x, y, 1, 1).data;
+    } catch (e) { return; }
+    var rFreq = 196 + (data[0] / 255) * 196;
+    var gFreq = 392 + (data[1] / 255) * 392;
+    var bFreq = 784 + (data[2] / 255) * 784;
+    playTone({ freq: rFreq, duration: .5, type: 'sine', gain: .15 });
+    playTone({ freq: gFreq, duration: .5, type: 'triangle', gain: .13 });
+    playTone({ freq: bFreq, duration: .5, type: 'sine', gain: .11 });
+  }
+
+  var chordDrawing = false, chordLast = null, chordMoved = false;
+  chordCanvas.addEventListener('pointerdown', function (e) {
+    chordDrawing = true; chordMoved = false;
+    chordCanvas.setPointerCapture(e.pointerId);
+    chordLast = canvasPoint(chordCanvas, e);
+    chCtx.beginPath(); chCtx.moveTo(chordLast.x, chordLast.y);
+  });
+  chordCanvas.addEventListener('pointermove', function (e) {
+    if (!chordDrawing) return;
+    if (!chordMoved) { chordMoved = true; startScribble(); }
+    var pt = canvasPoint(chordCanvas, e);
+    updateScribble(Math.hypot(pt.x - chordLast.x, pt.y - chordLast.y));
+    chCtx.globalAlpha = 0.55;
+    chCtx.strokeStyle = chordColor;
+    chCtx.lineWidth = 60;
+    chCtx.lineTo(pt.x, pt.y);
+    chCtx.stroke();
+    chCtx.globalAlpha = 1;
+    chordLast = pt;
+  });
+  function endChordStroke() {
+    if (!chordDrawing) return;
+    chordDrawing = false;
+    if (chordMoved) { stopScribble(); }
+    else { playColorChord(chordLast); }
+  }
+  chordCanvas.addEventListener('pointerup', endChordStroke);
+  chordCanvas.addEventListener('pointerleave', function () { if (chordDrawing) { chordDrawing = false; if (chordMoved) stopScribble(); } });
+  chordCanvas.addEventListener('pointercancel', function () { if (chordDrawing) { chordDrawing = false; if (chordMoved) stopScribble(); } });
+
+  document.getElementById('chordClear').addEventListener('click', function () { fillPaper(chCtx, chordCanvas); playClick(); });
+  document.getElementById('chordSave').addEventListener('click', function () {
+    chordCanvas.toBlob(function (blob) { if (blob) saveBlob(blob, '나의_색깔화음.png'); }, 'image/png');
+  });
+
+  /* ================= SOUND GARDEN TAB (반복해서 누르면 자라며 소리가 높아집니다) ================= */
+  var gardenCanvas = document.getElementById('gardenCanvas');
+  var gdCtx = gardenCanvas.getContext('2d');
+  var GARDEN_MAX_STAGE = 5, GARDEN_HIT_X = 50, GARDEN_Y0 = gardenCanvas.height - 60;
+  var gardenColor = '#4CAF6D';
+  buildSwatches(document.getElementById('gardenSwatches'), function (hex) { gardenColor = hex; }, gardenColor);
+  var gardenPlants = [];
+
+  function gardenNoteForStage(stage) { return SEQ_NOTES[Math.min(SEQ_NOTES.length - 1, stage + 2)]; }
+  function drawGarden() {
+    fillPaper(gdCtx, gardenCanvas);
+    gdCtx.strokeStyle = 'rgba(38,51,44,0.3)'; gdCtx.lineWidth = 4;
+    gdCtx.beginPath(); gdCtx.moveTo(0, GARDEN_Y0); gdCtx.lineTo(gardenCanvas.width, GARDEN_Y0); gdCtx.stroke();
+    gardenPlants.forEach(function (p) {
+      var stemH = 20 + p.stage * 30;
+      gdCtx.strokeStyle = '#4CAF6D'; gdCtx.lineWidth = 6;
+      gdCtx.beginPath(); gdCtx.moveTo(p.x, p.y); gdCtx.lineTo(p.x, p.y - stemH); gdCtx.stroke();
+      var flowerR = 8 + p.stage * 8;
+      if (p.stage > 0) {
+        gdCtx.fillStyle = p.color;
+        gdCtx.strokeStyle = '#26332C'; gdCtx.lineWidth = 3;
+        for (var k = 0; k < 6; k++) {
+          var ang = (Math.PI * 2 / 6) * k;
+          var cx = p.x + Math.cos(ang) * flowerR * 0.7, cy = (p.y - stemH) + Math.sin(ang) * flowerR * 0.7;
+          gdCtx.beginPath(); gdCtx.arc(cx, cy, flowerR * 0.55, 0, Math.PI * 2); gdCtx.fill(); gdCtx.stroke();
+        }
+        gdCtx.beginPath(); gdCtx.arc(p.x, p.y - stemH, flowerR * 0.5, 0, Math.PI * 2);
+        gdCtx.fillStyle = '#FFD23F'; gdCtx.fill(); gdCtx.stroke();
+      }
+    });
+  }
+  drawGarden();
+
+  gardenCanvas.addEventListener('pointerdown', function (e) {
+    var pt = canvasPoint(gardenCanvas, e);
+    var hit = null;
+    for (var i = 0; i < gardenPlants.length; i++) {
+      if (Math.abs(gardenPlants[i].x - pt.x) < GARDEN_HIT_X) { hit = gardenPlants[i]; break; }
+    }
+    if (hit) { if (hit.stage < GARDEN_MAX_STAGE) hit.stage++; }
+    else { hit = { x: pt.x, y: GARDEN_Y0, stage: 1, color: gardenColor }; gardenPlants.push(hit); }
+    playTone({ freq: gardenNoteForStage(hit.stage), duration: .3, type: 'triangle', gain: .2 });
+    drawGarden();
+  });
+  document.getElementById('gardenPlay').addEventListener('click', function () {
+    if (!gardenPlants.length) { showToast('꽃을 먼저 심어보세요! 🌱'); return; }
+    gardenPlants.forEach(function (p, i) { setTimeout(function () { playTone({ freq: gardenNoteForStage(p.stage), duration: .35, type: 'triangle', gain: .2 }); }, i * 220); });
+  });
+  document.getElementById('gardenClear').addEventListener('click', function () {
+    gardenPlants = [];
+    drawGarden();
+    playClick();
+  });
+  document.getElementById('gardenSave').addEventListener('click', function () {
+    gardenCanvas.toBlob(function (blob) { if (blob) saveBlob(blob, '나의_소리정원.png'); }, 'image/png');
+  });
+
+  /* ================= SOUND PATH JOURNEY TAB (그린 길을 따라 여행하며 소리를 냅니다) ================= */
+  var journeyCanvas = document.getElementById('journeyCanvas');
+  var jnCtx = journeyCanvas.getContext('2d');
+  var JOURNEY = ['🏠', '🌳', '⭐', '🎈', '🍎', '🌈'];
+  var JOURNEY_SOUND = {
+    '🏠': function () { playTone({ freq: 392, duration: .25, type: 'triangle', gain: .2 }); },
+    '🌳': function () { playTone({ freq: 329.63, duration: .3, type: 'sine', gain: .2 }); },
+    '⭐': function () { playSparkle(); },
+    '🎈': function () { playTone({ freq: 600, sweepTo: 900, duration: .2, type: 'sine', gain: .18 }); },
+    '🍎': function () { playTone({ freq: 523.25, duration: .18, type: 'square', gain: .16 }); },
+    '🌈': function () { [1, 2, 3].forEach(function (i, idx) { playTone({ freq: PENTATONIC[i], duration: .16, type: 'triangle', gain: .16, delay: idx * .08 }); }); }
+  };
+  var currentLandmark = JOURNEY[0];
+  var journeyButtonsEl = document.getElementById('journeyButtons');
+  JOURNEY.forEach(function (emoji, idx) {
+    var b = document.createElement('button');
+    b.className = 'stamp-btn';
+    b.textContent = emoji;
+    b.setAttribute('aria-pressed', String(idx === 0));
+    b.addEventListener('click', function () {
+      Array.prototype.forEach.call(journeyButtonsEl.children, function (c) { c.setAttribute('aria-pressed', 'false'); });
+      b.setAttribute('aria-pressed', 'true');
+      currentLandmark = emoji;
+      playClick();
+    });
+    journeyButtonsEl.appendChild(b);
+  });
+
+  var journeyPath = [], journeyLandmarks = [];
+  function drawJourney(travelerPos) {
+    fillPaper(jnCtx, journeyCanvas);
+    if (journeyPath.length > 1) {
+      jnCtx.lineCap = 'round'; jnCtx.lineJoin = 'round';
+      jnCtx.strokeStyle = '#A9714B';
+      jnCtx.lineWidth = 22;
+      jnCtx.beginPath();
+      jnCtx.moveTo(journeyPath[0].x, journeyPath[0].y);
+      for (var i = 1; i < journeyPath.length; i++) jnCtx.lineTo(journeyPath[i].x, journeyPath[i].y);
+      jnCtx.stroke();
+      jnCtx.strokeStyle = 'rgba(255,255,255,0.55)';
+      jnCtx.lineWidth = 4;
+      jnCtx.setLineDash([18, 14]);
+      jnCtx.stroke();
+      jnCtx.setLineDash([]);
+    }
+    journeyLandmarks.forEach(function (l) {
+      jnCtx.font = '64px sans-serif';
+      jnCtx.textAlign = 'center'; jnCtx.textBaseline = 'middle';
+      jnCtx.fillText(l.emoji, l.x, l.y);
+    });
+    if (travelerPos) {
+      jnCtx.font = '56px sans-serif';
+      jnCtx.textAlign = 'center'; jnCtx.textBaseline = 'middle';
+      jnCtx.fillText('🚗', travelerPos.x, travelerPos.y);
+    }
+  }
+  drawJourney(null);
+
+  var journeyDrawing = false, journeyLast = null, journeyMoved = false;
+  journeyCanvas.addEventListener('pointerdown', function (e) {
+    journeyDrawing = true; journeyMoved = false;
+    journeyCanvas.setPointerCapture(e.pointerId);
+    journeyLast = canvasPoint(journeyCanvas, e);
+  });
+  journeyCanvas.addEventListener('pointermove', function (e) {
+    if (!journeyDrawing) return;
+    var pt = canvasPoint(journeyCanvas, e);
+    var dist = Math.hypot(pt.x - journeyLast.x, pt.y - journeyLast.y);
+    if (dist > 6) {
+      if (!journeyMoved) { journeyMoved = true; journeyPath.push(journeyLast); startScribble(); }
+      updateScribble(dist);
+      journeyPath.push(pt);
+      journeyLast = pt;
+      drawJourney(null);
+    }
+  });
+  function endJourneyStroke() {
+    if (!journeyDrawing) return;
+    journeyDrawing = false;
+    if (journeyMoved) { stopScribble(); }
+    else { journeyLandmarks.push({ x: journeyLast.x, y: journeyLast.y, emoji: currentLandmark }); JOURNEY_SOUND[currentLandmark](); drawJourney(null); }
+  }
+  journeyCanvas.addEventListener('pointerup', endJourneyStroke);
+  journeyCanvas.addEventListener('pointerleave', function () { if (journeyDrawing) { journeyDrawing = false; if (journeyMoved) stopScribble(); } });
+  journeyCanvas.addEventListener('pointercancel', function () { if (journeyDrawing) { journeyDrawing = false; if (journeyMoved) stopScribble(); } });
+
+  var journeyActive = false, journeyStartTime = 0, journeyTriggered = null, journeyRAF = null;
+  var JOURNEY_DURATION_MS = 6000;
+  function journeyLoop(ts) {
+    if (!journeyActive) return;
+    if (!journeyStartTime) journeyStartTime = ts;
+    var t = Math.min(1, (ts - journeyStartTime) / JOURNEY_DURATION_MS);
+    var idx = Math.min(journeyPath.length - 1, Math.floor(t * (journeyPath.length - 1)));
+    var pos = journeyPath[idx];
+    journeyLandmarks.forEach(function (l, li) {
+      if (!journeyTriggered[li] && Math.hypot(pos.x - l.x, pos.y - l.y) < 55) { journeyTriggered[li] = true; JOURNEY_SOUND[l.emoji](); }
+    });
+    drawJourney(pos);
+    if (t < 1) { journeyRAF = requestAnimationFrame(journeyLoop); }
+    else { stopJourney(); }
+  }
+  function stopJourney() {
+    if (!journeyActive) return;
+    journeyActive = false;
+    journeyStartTime = 0;
+    if (journeyRAF) cancelAnimationFrame(journeyRAF);
+    journeyRAF = null;
+    document.getElementById('journeyPlay').textContent = '▶️ 여행 떠나기';
+    drawJourney(null);
+  }
+  document.getElementById('journeyPlay').addEventListener('click', function () {
+    if (journeyActive) { stopJourney(); playClick(); return; }
+    if (journeyPath.length < 2) { showToast('먼저 길을 그려보세요! 🛤️'); return; }
+    journeyActive = true;
+    journeyStartTime = 0;
+    journeyTriggered = journeyLandmarks.map(function () { return false; });
+    document.getElementById('journeyPlay').textContent = '⏹️ 멈추기';
+    journeyRAF = requestAnimationFrame(journeyLoop);
+  });
+  document.getElementById('journeyClear').addEventListener('click', function () {
+    journeyPath = []; journeyLandmarks = [];
+    stopJourney();
+    drawJourney(null);
+    playClick();
+  });
+  document.getElementById('journeySave').addEventListener('click', function () {
+    journeyCanvas.toBlob(function (blob) { if (blob) saveBlob(blob, '나의_소리지도여행.png'); }, 'image/png');
+  });
+
+  /* ================= WATER BOTTLE XYLOPHONE TAB (물 높이가 곧 음높이) ================= */
+  var bottlesCanvas = document.getElementById('bottlesCanvas');
+  var btCtx = bottlesCanvas.getContext('2d');
+  var BOTTLE_COUNT = 8, BOTTLE_TOP = 60, BOTTLE_BOTTOM = 900, BOTTLE_GAP = 16;
+  var BOTTLE_H = BOTTLE_BOTTOM - BOTTLE_TOP;
+  var bottleFill = new Array(BOTTLE_COUNT).fill(0.5);
+  var bottleColor = new Array(BOTTLE_COUNT).fill('#4EA8DE');
+  var bottlesCurrentColor = '#4EA8DE';
+  buildSwatches(document.getElementById('bottlesSwatches'), function (hex) { bottlesCurrentColor = hex; }, bottlesCurrentColor);
+
+  function bottleWidth() { return (bottlesCanvas.width - BOTTLE_GAP * (BOTTLE_COUNT + 1)) / BOTTLE_COUNT; }
+  function bottleX(i) { return BOTTLE_GAP + i * (bottleWidth() + BOTTLE_GAP); }
+  function drawBottles() {
+    fillPaper(btCtx, bottlesCanvas);
+    var w = bottleWidth();
+    for (var i = 0; i < BOTTLE_COUNT; i++) {
+      var x = bottleX(i);
+      var fillH = bottleFill[i] * BOTTLE_H;
+      btCtx.save();
+      btCtx.beginPath();
+      btCtx.rect(x, BOTTLE_TOP, w, BOTTLE_H);
+      btCtx.clip();
+      btCtx.fillStyle = bottleColor[i];
+      btCtx.globalAlpha = 0.75;
+      btCtx.fillRect(x, BOTTLE_BOTTOM - fillH, w, fillH);
+      btCtx.globalAlpha = 1;
+      btCtx.restore();
+      btCtx.strokeStyle = '#26332C'; btCtx.lineWidth = 6;
+      btCtx.beginPath();
+      if (btCtx.roundRect) btCtx.roundRect(x, BOTTLE_TOP, w, BOTTLE_H, 14);
+      else btCtx.rect(x, BOTTLE_TOP, w, BOTTLE_H);
+      btCtx.stroke();
+    }
+  }
+  drawBottles();
+
+  function bottleFreqFor(i) { return 220 * Math.pow(4, 1 - bottleFill[i]); }
+  function bottleAt(pt) {
+    var w = bottleWidth();
+    for (var i = 0; i < BOTTLE_COUNT; i++) {
+      var x = bottleX(i);
+      if (pt.x >= x && pt.x <= x + w && pt.y >= BOTTLE_TOP && pt.y <= BOTTLE_BOTTOM) return i;
+    }
+    return -1;
+  }
+  bottlesCanvas.addEventListener('pointerdown', function (e) {
+    var pt = canvasPoint(bottlesCanvas, e);
+    var i = bottleAt(pt);
+    if (i < 0) return;
+    bottleFill[i] = Math.max(0.05, Math.min(1, (BOTTLE_BOTTOM - pt.y) / BOTTLE_H));
+    bottleColor[i] = bottlesCurrentColor;
+    drawBottles();
+    playTone({ freq: bottleFreqFor(i), duration: .5, type: 'sine', gain: .2 });
+  });
+  document.getElementById('bottlesClear').addEventListener('click', function () {
+    bottleFill = new Array(BOTTLE_COUNT).fill(0.5);
+    bottleColor = new Array(BOTTLE_COUNT).fill('#4EA8DE');
+    drawBottles();
+    playClick();
+  });
+  document.getElementById('bottlesSave').addEventListener('click', function () {
+    bottlesCanvas.toBlob(function (blob) { if (blob) saveBlob(blob, '나의_물병실로폰.png'); }, 'image/png');
   });
 
   /* ================= TRACING TAB ================= */
