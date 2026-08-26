@@ -56,7 +56,9 @@ const CFG = {
     { emoji: '🎼', label: 'AI 감각 창작 수업', desc: '다른 창작 수업 앱으로 가요',
       url: 'https://hkstudent.netlify.app/' },
     { emoji: '🖍️', label: '크레용 놀이터', desc: '색칠·그리기·도장놀이를 소리와 함께 즐겨요',
-      url: 'crayon-playground/index.html' }
+      url: 'crayon-playground/index.html' },
+    { emoji: '🏙️', label: '일상생활기술 연습', desc: '지하철·버스·카페·병원을 게임으로 연습해요',
+      url: 'daily-life-skills/index.html' }
   ],
 
   /* ---------- 주제 ---------- */

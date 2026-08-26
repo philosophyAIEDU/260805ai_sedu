@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#EEF4F8" />
+<title>일상생활기술 연습</title>
+<meta name="description" content="지하철·버스·길찾기·무인매장·카페·영화관·병원·마트 — 지역사회 일상생활기술을 게임으로 연습해요" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏙️</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #EEF4F8;
+    --surface: #FFFFFF;
+    --panel: #F7FBFD;
+    --ink: #1F3340;
+    --ink-soft: #5A7183;
+    --accent: #2E86AB;
+    --accent-ink: #FFFFFF;
+    --good: #2F9E68;
+    --good-soft: #E4F5EC;
+    --warn: #E07B39;
+    --warn-soft: #FDF0E6;
+    --gold: #F2B341;
+    --line: #D6E3EC;
+    --shadow: 0 14px 30px -16px rgba(31,51,64,0.30);
+    --r-lg: 26px;
+    --r-md: 18px;
+    --r-sm: 12px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #131E26;
+      --surface: #1C2A34;
+      --panel: #223240;
+      --ink: #E9F2F7;
+      --ink-soft: #9FB8C7;
+      --accent: #4FA8CC;
+      --accent-ink: #10202A;
+      --good: #5BC48B;
+      --good-soft: #1E3A2C;
+      --warn: #F0975C;
+      --warn-soft: #3A2A1C;
+      --gold: #F7C566;
+      --line: #33485A;
+      --shadow: 0 14px 30px -16px rgba(0,0,0,0.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #131E26; --surface: #1C2A34; --panel: #223240;
+    --ink: #E9F2F7; --ink-soft: #9FB8C7;
+    --accent: #4FA8CC; --accent-ink: #10202A;
+    --good: #5BC48B; --good-soft: #1E3A2C;
+    --warn: #F0975C; --warn-soft: #3A2A1C; --gold: #F7C566;
+    --line: #33485A; --shadow: 0 14px 30px -16px rgba(0,0,0,0.6);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink);
+    font-family: 'Gowun Dodum', 'Apple SD Gothic Neo', sans-serif;
+    -webkit-font-smoothing: antialiased; touch-action: manipulation;
+  }
+  h1, h2, h3, .display { font-family: 'Do Hyeon', 'Trebuchet MS', sans-serif; font-weight: 400; text-wrap: balance; }
+  button { font-family: inherit; -webkit-tap-highlight-color: transparent; }
+  :focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+
+  .app { max-width: 940px; margin: 0 auto; padding: clamp(12px, 2.5vw, 24px);
+         display: flex; flex-direction: column; gap: clamp(14px, 2vw, 20px); }
+
+  /* ---------- Top bar ---------- */
+  .topbar { display: flex; align-items: center; gap: 10px;
+            background: var(--surface); border-radius: var(--r-lg);
+            padding: 10px 14px; box-shadow: var(--shadow); }
+  .brand { display: flex; align-items: center; gap: 9px; margin-right: auto; min-width: 0; }
+  .brand-ic { font-size: 1.7rem; line-height: 1; }
+  .brand h1 { margin: 0; font-size: clamp(1.1rem, 3vw, 1.5rem);
+              white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .icon-btn { border: 2px solid var(--line); background: var(--bg); color: var(--ink);
+              border-radius: 999px; width: 46px; height: 46px; min-width: 46px; font-size: 1.25rem;
+              cursor: pointer; display: grid; place-items: center; text-decoration: none; }
+  .icon-btn[aria-pressed="false"] { opacity: .45; }
+  .icon-btn[hidden] { display: none; }
+
+  /* ---------- Buttons ---------- */
+  .btn { border: none; border-radius: 999px; padding: 14px 22px; font-size: 1.05rem;
+         cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+         font-family: 'Do Hyeon', sans-serif; }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); }
+  .btn-ghost { background: var(--surface); color: var(--ink); border: 2px solid var(--line); }
+  .btn:active { transform: translateY(1px); }
+
+  /* ---------- Home ---------- */
+  .home-head { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 16px; }
+  .home-sub { margin: 0; color: var(--ink-soft); font-size: 1.05rem; margin-right: auto; }
+  .star-bar { background: var(--surface); border: 2px solid var(--line); border-radius: 999px;
+              padding: 8px 18px; font-family: 'Do Hyeon', sans-serif; font-size: 1.05rem; }
+  .star-bar b { color: var(--accent); font-size: 1.2rem; }
+
+  .mission-grid { display: grid; gap: 12px;
+                  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+  .mcard { position: relative; text-align: left; cursor: pointer;
+           background: var(--surface); border: 2px solid var(--line); border-radius: var(--r-md);
+           padding: 16px 14px; display: flex; flex-direction: column; gap: 4px;
+           color: var(--ink); box-shadow: var(--shadow);
+           transition: transform .14s ease, border-color .14s ease; }
+  .mcard:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .mcard-ic { font-size: 2.2rem; line-height: 1.1; }
+  .mcard-title { font-family: 'Do Hyeon', sans-serif; font-size: 1.2rem; }
+  .mcard-desc { color: var(--ink-soft); font-size: .92rem; }
+  .mcard-ch { color: var(--ink-soft); font-size: .78rem; opacity: .8; }
+  .mcard.done { border-color: var(--gold); background: linear-gradient(180deg, rgba(242,179,65,.10), transparent 60%), var(--surface); }
+  .mcard-star { position: absolute; top: 10px; right: 12px; font-size: 1.5rem; }
+  .home-foot { display: flex; justify-content: center; padding-top: 4px; }
+
+  /* ---------- Play ---------- */
+  .dots { display: flex; gap: 7px; justify-content: center; flex-wrap: wrap; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--line); }
+  .dot.cur { background: var(--accent); transform: scale(1.25); }
+  .dot.ok { background: var(--good); }
+
+  .stage { background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow);
+           padding: clamp(16px, 3vw, 26px); display: flex; flex-direction: column;
+           align-items: center; gap: 16px; }
+  .scene { font-size: clamp(3rem, 12vw, 4.6rem); line-height: 1.15; text-align: center; }
+  .question { margin: 0; font-size: clamp(1.15rem, 3.4vw, 1.5rem); text-align: center;
+              font-family: 'Do Hyeon', sans-serif; line-height: 1.5; }
+  .qsub { margin: -8px 0 0; color: var(--ink-soft); font-size: .98rem; text-align: center; }
+
+  .answers { display: grid; gap: 12px; width: 100%; max-width: 560px; }
+  .ans-btn { display: flex; align-items: center; gap: 14px; text-align: left;
+             background: var(--panel); border: 3px solid var(--line); border-radius: var(--r-md);
+             padding: 16px 18px; font-size: 1.1rem; color: var(--ink); cursor: pointer;
+             min-height: 68px; transition: border-color .12s ease, background .12s ease; }
+  .ans-btn:hover { border-color: var(--accent); }
+  .ans-btn .ic { font-size: 1.8rem; line-height: 1; }
+  .ans-btn.right { border-color: var(--good); background: var(--good-soft); }
+  .ans-btn.wrong { border-color: var(--warn); background: var(--warn-soft); }
+  .ans-btn[disabled] { cursor: default; }
+
+  .ox-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; max-width: 460px; }
+  .ox-btn { border: 4px solid var(--line); background: var(--panel); border-radius: var(--r-md);
+            padding: 20px 10px; cursor: pointer; color: var(--ink);
+            display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .ox-btn .mark { font-size: 3rem; line-height: 1; font-family: 'Do Hyeon', sans-serif; }
+  .ox-btn .lab { font-size: 1.05rem; }
+  .ox-btn.o .mark { color: var(--good); }
+  .ox-btn.x .mark { color: var(--warn); }
+  .ox-btn.right { border-color: var(--good); background: var(--good-soft); }
+  .ox-btn.wrong { border-color: var(--warn); background: var(--warn-soft); }
+
+  /* ---------- Feedback ---------- */
+  .feedback { border-radius: var(--r-md); padding: 16px 20px; display: flex; gap: 12px;
+              align-items: flex-start; font-size: 1.05rem; line-height: 1.55; }
+  .feedback[hidden] { display: none; }
+  .feedback .fic { font-size: 1.7rem; line-height: 1; }
+  .feedback.ok { background: var(--good-soft); border: 2px solid var(--good); }
+  .feedback.no { background: var(--warn-soft); border: 2px solid var(--warn); }
+  .feedback b { font-family: 'Do Hyeon', sans-serif; }
+  .play-foot { display: flex; justify-content: center; }
+  .play-foot[hidden] { display: none; }
+
+  /* ---------- Visuals ---------- */
+  .visual { width: 100%; max-width: 620px; background: var(--panel);
+            border: 2px solid var(--line); border-radius: var(--r-md); padding: 14px; }
+  .visual svg { width: 100%; height: auto; display: block; }
+  .vis-cap { text-align: center; color: var(--ink-soft); font-size: .9rem; margin: 8px 0 0; }
+
+  .floors { width: 100%; max-width: 420px; border: 3px solid var(--ink);
+            border-radius: var(--r-sm); overflow: hidden; background: var(--surface); }
+  .floors .fh { background: var(--ink); color: var(--surface); text-align: center;
+                padding: 8px; font-family: 'Do Hyeon', sans-serif; letter-spacing: .1em; }
+  .floors .fr { display: flex; border-top: 2px solid var(--line); }
+  .floors .fr:first-of-type { border-top: none; }
+  .floors .fn { width: 76px; min-width: 76px; background: var(--panel); text-align: center;
+                padding: 12px 0; font-family: 'Do Hyeon', sans-serif; font-size: 1.15rem;
+                border-right: 2px solid var(--line); }
+  .floors .fd { padding: 12px 14px; font-size: 1.02rem; }
+
+  /* ---------- Seat game ---------- */
+  .ticket { width: 100%; max-width: 340px; background: var(--surface);
+            border: 3px dashed var(--accent); border-radius: var(--r-md); padding: 14px 18px; }
+  .ticket .tt { font-family: 'Do Hyeon', sans-serif; color: var(--accent);
+                text-align: center; font-size: 1.1rem; margin-bottom: 8px; }
+  .ticket .tseat { display: flex; justify-content: center; align-items: baseline; gap: 6px;
+                   font-family: 'Do Hyeon', sans-serif; font-size: 2.1rem; }
+  .ticket .tseat small { font-size: 1rem; color: var(--ink-soft); }
+  .screen-bar { width: 100%; max-width: 560px; background: var(--ink); color: var(--surface);
+                text-align: center; padding: 10px; border-radius: 8px 8px 26px 26px;
+                font-family: 'Do Hyeon', sans-serif; letter-spacing: .3em; }
+  .seat-board { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 560px; }
+  .seat-row { display: flex; align-items: center; gap: 8px; }
+  .seat-row .rlab { width: 30px; min-width: 30px; text-align: center;
+                    font-family: 'Do Hyeon', sans-serif; color: var(--ink-soft); }
+  .seat-row .seats { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; flex: 1; }
+  .seat { aspect-ratio: 1/1; border: 2px solid var(--line); background: var(--panel);
+          border-radius: 8px 8px 4px 4px; cursor: pointer; color: var(--ink-soft);
+          font-size: .85rem; display: grid; place-items: center; padding: 0; }
+  .seat:hover { border-color: var(--accent); }
+  .seat.right { background: var(--good); border-color: var(--good); color: #fff; }
+  .seat.wrong { background: var(--warn-soft); border-color: var(--warn); }
+
+  /* ---------- Sequence game ---------- */
+  .seq-list { display: grid; gap: 10px; width: 100%; max-width: 560px; }
+  .seq-item { display: flex; align-items: center; gap: 12px; text-align: left;
+              background: var(--panel); border: 3px solid var(--line); border-radius: var(--r-md);
+              padding: 14px 16px; font-size: 1.05rem; color: var(--ink); cursor: pointer; min-height: 62px; }
+  .seq-item:hover { border-color: var(--accent); }
+  .seq-item .num { width: 34px; min-width: 34px; height: 34px; border-radius: 50%;
+                   background: var(--line); color: var(--ink-soft); display: grid; place-items: center;
+                   font-family: 'Do Hyeon', sans-serif; }
+  .seq-item.picked { border-color: var(--good); background: var(--good-soft); }
+  .seq-item.picked .num { background: var(--good); color: #fff; }
+  .seq-item.shake { animation: shake .3s; }
+  @keyframes shake { 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+
+  /* ---------- Bus bell game ---------- */
+  .bus-scene { width: 100%; max-width: 560px; background: var(--panel);
+               border: 3px solid var(--line); border-radius: var(--r-md); padding: 18px; }
+  .bus-target { text-align: center; font-family: 'Do Hyeon', sans-serif; font-size: 1.15rem;
+                color: var(--accent); margin-bottom: 12px; }
+  .bus-sign { background: var(--ink); color: #FFD86B; border-radius: 10px; padding: 18px 12px;
+              text-align: center; font-family: 'Do Hyeon', sans-serif;
+              font-size: clamp(1.05rem, 3.6vw, 1.4rem); min-height: 76px;
+              display: grid; place-items: center; }
+  .bell-btn { margin: 16px auto 0; display: block; width: 128px; height: 128px; border-radius: 50%;
+              border: 6px solid #B23B3B; background: #E85555; color: #fff; cursor: pointer;
+              font-family: 'Do Hyeon', sans-serif; font-size: 1.1rem; line-height: 1.3; }
+  .bell-btn:active { transform: scale(.95); }
+  .bell-btn[disabled] { opacity: .5; cursor: default; }
+
+  /* ---------- Done screen ---------- */
+  .done-card { background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow);
+               padding: 32px 24px; text-align: center; display: flex; flex-direction: column;
+               align-items: center; gap: 14px; }
+  .done-card .big { font-size: 4.4rem; line-height: 1; }
+  .done-card h2 { margin: 0; font-size: 1.7rem; }
+  .done-card p { margin: 0; color: var(--ink-soft); font-size: 1.05rem; }
+  .done-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+
+  #confetti-layer { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 40; }
+  .confetto { position: absolute; top: -20px; width: 10px; height: 14px; border-radius: 3px;
+              animation: fall linear forwards; }
+  @keyframes fall { to { transform: translateY(110vh) rotate(540deg); opacity: .9; } }
+
+  .toast { position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 12px);
+           background: var(--ink); color: var(--bg); padding: 12px 20px; border-radius: 999px;
+           font-size: .98rem; opacity: 0; pointer-events: none; z-index: 50; max-width: 90vw;
+           text-align: center; transition: opacity .25s ease, transform .25s ease; box-shadow: var(--shadow); }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .confetto { display: none; }
+    * { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+  }
+
+  footer.credit { text-align: center; color: var(--ink-soft); font-size: .85rem; padding: 4px 0 10px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="topbar">
+    <a class="icon-btn" id="btnHome" href="../index.html" aria-label="처음 화면으로 가기" title="처음 화면으로">🏠</a>
+    <button class="icon-btn" id="btnBack" hidden aria-label="미션 고르기로 돌아가기" title="돌아가기">←</button>
+    <div class="brand">
+      <span class="brand-ic" aria-hidden="true">🏙️</span>
+      <h1 id="topTitle">일상생활기술 연습</h1>
+    </div>
+    <button class="icon-btn" id="btnRead" aria-pressed="true" aria-label="읽어주기 켜기/끄기" title="읽어주기">🗣️</button>
+    <button class="icon-btn" id="btnSound" aria-pressed="true" aria-label="소리 켜기/끄기" title="소리">🔊</button>
+  </header>
+
+  <main>
+    <!-- ===== 미션 고르기 ===== -->
+    <section id="screen-home">
+      <div class="home-head">
+        <p class="home-sub">해 보고 싶은 미션을 골라 보세요!</p>
+        <div class="star-bar">완료한 미션 <b id="starCount">0</b> / <span id="starTotal">11</span> ⭐</div>
+      </div>
+      <div class="mission-grid" id="missionGrid"></div>
+      <div class="home-foot">
+        <button class="btn btn-ghost" id="btnReset">🔄 처음부터 다시 하기</button>
+      </div>
+    </section>
+
+    <!-- ===== 문제 풀기 ===== -->
+    <section id="screen-play" hidden>
+      <div class="dots" id="stepDots"></div>
+      <div class="stage" id="stage"></div>
+      <div class="feedback" id="feedback" hidden></div>
+      <div class="play-foot" id="playFoot" hidden>
+        <button class="btn btn-primary" id="btnNext">다음으로 →</button>
+      </div>
+    </section>
+
+    <!-- ===== 미션 완료 ===== -->
+    <section id="screen-done" hidden>
+      <div class="done-card">
+        <div class="big" id="doneEmoji" aria-hidden="true">🎉</div>
+        <h2 id="doneTitle">미션 성공!</h2>
+        <p id="doneText">잘 했어요!</p>
+        <div class="done-actions">
+          <button class="btn btn-ghost" id="btnAgain">🔁 한 번 더 하기</button>
+          <button class="btn btn-primary" id="btnToHome">🏠 다른 미션 하기</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="credit">『이젠 나를 응원해!』 2권 지역사회 — 배운 내용을 게임으로 연습해요</footer>
+</div>
+
+<div class="toast" id="toast" aria-live="polite"></div>
+<div id="confetti-layer" aria-hidden="true"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ==================== 소리 ==================== */
+  var audioCtx = null;
+  var muted = localStorage.getItem('dls-muted') === '1';
+  var readAloud = localStorage.getItem('dls-read') !== '0';
+
+  function ensureAudio() {
+    if (!audioCtx) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AC();
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+  function tone(o) {
+    if (muted) return;
+    var ctx = ensureAudio();
+    var t0 = ctx.currentTime + (o.delay || 0);
+    var osc = ctx.createOscillator(), g = ctx.createGain();
+    osc.type = o.type || 'sine';
+    osc.frequency.setValueAtTime(o.freq, t0);
+    if (o.sweepTo) osc.frequency.exponentialRampToValueAtTime(o.sweepTo, t0 + o.duration);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(o.gain || 0.15, t0 + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + o.duration);
+    osc.connect(g).connect(ctx.destination);
+    osc.start(t0); osc.stop(t0 + o.duration + 0.03);
+  }
+  function sTap()     { tone({ freq: 900, duration: .06, type: 'square', gain: .07 }); }
+  function sRight()   { [659.25, 880, 1174.66].forEach(function (f, i) { tone({ freq: f, duration: .22, type: 'triangle', gain: .2, delay: i * .09 }); }); }
+  function sTryAgain(){ tone({ freq: 340, duration: .22, type: 'sine', gain: .16, sweepTo: 260 }); }
+  function sCheer()   { [523.25, 659.25, 783.99, 1046.5].forEach(function (f, i) { tone({ freq: f, duration: .28, type: 'triangle', gain: .2, delay: i * .12 }); }); }
+  function sBell()    { tone({ freq: 1200, duration: .5, type: 'sine', gain: .2 }); tone({ freq: 1600, duration: .45, type: 'sine', gain: .12, delay: .04 }); }
+  function sAnnounce(){ tone({ freq: 880, duration: .14, type: 'sine', gain: .13 }); tone({ freq: 1174, duration: .18, type: 'sine', gain: .13, delay: .12 }); }
+
+  /* 읽어주기 (브라우저 음성, 인터넷/API 필요 없음) */
+  var canSpeak = 'speechSynthesis' in window;
+  function speak(text) {
+    if (!canSpeak || !readAloud || !text) return;
+    try {
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(String(text).replace(/\s+/g, ' ').trim());
+      u.lang = 'ko-KR';
+      u.rate = 0.92;
+      window.speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+  function stopSpeak() { if (canSpeak) { try { window.speechSynthesis.cancel(); } catch (e) {} } }
+
+  var btnSound = document.getElementById('btnSound');
+  var btnRead = document.getElementById('btnRead');
+  function refreshToggles() {
+    btnSound.textContent = muted ? '🔇' : '🔊';
+    btnSound.setAttribute('aria-pressed', String(!muted));
+    btnRead.setAttribute('aria-pressed', String(readAloud));
+    btnRead.title = readAloud ? '읽어주기 켜짐' : '읽어주기 꺼짐';
+  }
+  btnSound.addEventListener('click', function () {
+    muted = !muted;
+    localStorage.setItem('dls-muted', muted ? '1' : '0');
+    refreshToggles();
+    if (!muted) sTap();
+  });
+  btnRead.addEventListener('click', function () {
+    readAloud = !readAloud;
+    localStorage.setItem('dls-read', readAloud ? '1' : '0');
+    refreshToggles();
+    if (readAloud) speak('읽어주기를 켰어요'); else stopSpeak();
+  });
+  if (!canSpeak) btnRead.hidden = true;
+  refreshToggles();
+
+  /* ==================== 안내 문구 · 축하 ==================== */
+  var toastEl = document.getElementById('toast'), toastTimer = null;
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 2400);
+  }
+  var confettiLayer = document.getElementById('confetti-layer');
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function burstConfetti() {
+    if (reduceMotion) return;
+    var colors = ['#2E86AB', '#F2B341', '#2F9E68', '#E07B39', '#8E6FD1', '#FF7EB9'];
+    for (var i = 0; i < 28; i++) {
+      var el = document.createElement('div');
+      el.className = 'confetto';
+      el.style.left = (Math.random() * 100) + 'vw';
+      el.style.background = colors[Math.floor(Math.random() * colors.length)];
+      var dur = 1.6 + Math.random() * 1.2;
+      el.style.animationDuration = dur + 's';
+      el.style.animationDelay = (Math.random() * .4) + 's';
+      confettiLayer.appendChild(el);
+      (function (n, d) { setTimeout(function () { n.remove(); }, d * 1000 + 600); })(el, dur);
+    }
+  }
+
+  /* ==================== 진행 기록 ==================== */
+  var progress = {};
+  try { progress = JSON.parse(localStorage.getItem('dls-progress') || '{}') || {}; } catch (e) { progress = {}; }
+  function saveProgress() {
+    try { localStorage.setItem('dls-progress', JSON.stringify(progress)); } catch (e) {}
+  }
+
+  function el(tag, attrs, kids) {
+    var n = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      if (k === 'text') n.textContent = attrs[k];
+      else if (k === 'html') n.innerHTML = attrs[k];
+      else if (attrs[k] === true) n.setAttribute(k, '');
+      else if (attrs[k] !== false && attrs[k] != null) n.setAttribute(k, attrs[k]);
+    });
+    (kids || []).forEach(function (c) { if (c) n.appendChild(c); });
+    return n;
+  }
+
+  /* ==================== 미션 (교재 단원 순서) ==================== */
+  var MISSIONS = [
+    {
+      id: 'subway1', emoji: '🚇', title: '지하철 예절', chapter: '1. 지하철(1)',
+      desc: '지하철에서 지켜야 할 약속',
+      steps: [
+        { type: 'ox', scene: '🧓🚇', text: '교통약자석 앞에 할머니가 서 계세요. 자리를 비켜 드려요.', answer: true,
+          why: '교통약자석은 할머니·할아버지, 몸이 불편한 분을 위한 자리예요.' },
+        { type: 'ox', scene: '📣🚇', text: '지하철 안에서 큰 소리로 노래를 불러요.', answer: false,
+          why: '지하철 안에서는 조용히 가요. 큰 소리는 다른 사람을 놀라게 해요.' },
+        { type: 'ox', scene: '🚪🧍', text: '문이 열리면, 내리는 사람이 다 내린 다음에 타요.', answer: true,
+          why: '내리는 사람이 먼저예요. 기다렸다가 타면 안전해요.' },
+        { type: 'ox', scene: '🏃💨', text: '문이 닫히고 있어요. 얼른 뛰어서 들어가요.', answer: false,
+          why: '문에 끼일 수 있어서 위험해요. 다음 열차를 기다려요.' },
+        { type: 'choice', scene: '💳❌', text: '개찰구에서 "삑삑" 소리가 나고 문이 열리지 않아요. 어떻게 할까요?',
+          options: [
+            { ic: '💰', label: '충전기에서 카드에 돈을 충전해요' },
+            { ic: '🤸', label: '개찰구를 넘어서 들어가요' },
+            { ic: '😢', label: '그냥 집으로 돌아가요' }
+          ], answer: 0,
+          why: '카드에 돈이 없으면 문이 열리지 않아요. 충전을 하면 탈 수 있어요.' }
+      ]
+    },
+    {
+      id: 'subway2', emoji: '🚪', title: '지하철 출구 찾기', chapter: '1. 지하철(2)',
+      desc: '약속한 출구를 찾아가요',
+      steps: [
+        { type: 'choice', scene: '📱', text: '동현이가 "용산역 2번 출구에서 만나자"고 했어요. 어디로 나갈까요?',
+          options: [
+            { ic: '1️⃣', label: '1번 출구' }, { ic: '2️⃣', label: '2번 출구' },
+            { ic: '3️⃣', label: '3번 출구' }, { ic: '4️⃣', label: '4번 출구' }
+          ], answer: 1,
+          why: '약속한 번호와 같은 출구로 나가면 친구를 만날 수 있어요.' },
+        { type: 'choice', scene: '🚻', text: '이번에는 4번 출구에서 만나기로 했어요. 어디로 나갈까요?',
+          options: [
+            { ic: '1️⃣', label: '1번 출구' }, { ic: '2️⃣', label: '2번 출구' },
+            { ic: '3️⃣', label: '3번 출구' }, { ic: '4️⃣', label: '4번 출구' }
+          ], answer: 3,
+          why: '표지판에서 4번 출구를 찾아 화살표를 따라가요.' },
+        { type: 'choice', scene: '😥❓', text: '출구가 너무 많아서 어디로 갈지 모르겠어요. 어떻게 할까요?',
+          options: [
+            { ic: '📞', label: '친구에게 전화해서 몇 번 출구인지 물어봐요' },
+            { ic: '🎲', label: '아무 출구로나 그냥 나가요' },
+            { ic: '🧍', label: '그 자리에 계속 서 있어요' }
+          ], answer: 0,
+          why: '모를 때는 물어보면 돼요. 친구나 역무원에게 물어보세요.' }
+      ]
+    },
+    {
+      id: 'subway3', emoji: '🧭', title: '지하철 타는 방법', chapter: '1. 지하철(3)',
+      desc: '어느 방향 열차를 탈지 정해요',
+      steps: [
+        { type: 'choice', visual: 'line1', scene: '', text: '용산역에서 서울역으로 가요. 어느 방면 열차를 탈까요?',
+          sub: '노선도에서 서울역이 용산역의 어느 쪽에 있는지 보세요.',
+          options: [
+            { ic: '⬅️', label: '신창 방면' }, { ic: '➡️', label: '청량리 방면' }
+          ], answer: 1,
+          why: '가려는 역이 오른쪽에 있으니 오른쪽 끝인 청량리 방면 열차를 타요.' },
+        { type: 'choice', visual: 'line1', scene: '', text: '시청역에서 용산역으로 가요. 어느 방면 열차를 탈까요?',
+          sub: '이번에는 가려는 역이 왼쪽에 있어요.',
+          options: [
+            { ic: '⬅️', label: '신창 방면' }, { ic: '➡️', label: '청량리 방면' }
+          ], answer: 0,
+          why: '가려는 역이 왼쪽에 있으니 왼쪽 끝인 신창 방면 열차를 타요.' },
+        { type: 'choice', scene: '🚉', text: '열차를 타기 전에 꼭 확인해야 하는 것은 무엇일까요?',
+          options: [
+            { ic: '🧭', label: '가려는 방향(운행 방향)이 맞는지' },
+            { ic: '🎨', label: '열차의 색깔이 예쁜지' },
+            { ic: '👥', label: '사람이 몇 명 타는지' }
+          ], answer: 0,
+          why: '같은 승강장이라도 방향이 다르면 반대로 가요. 방향을 꼭 확인해요.' }
+      ]
+    },
+    {
+      id: 'subway4', emoji: '🔄', title: '지하철 환승', chapter: '1. 지하철(4)',
+      desc: '다른 호선으로 갈아타요',
+      steps: [
+        { type: 'choice', scene: '🚇➡️🚇', text: '타고 가던 지하철에서 다른 호선으로 갈아타는 것을 무엇이라고 할까요?',
+          options: [
+            { ic: '🔄', label: '환승' }, { ic: '🎫', label: '개찰' }, { ic: '🅿️', label: '주차' }
+          ], answer: 0,
+          why: '다른 호선으로 갈아타는 것을 "환승"이라고 해요.' },
+        { type: 'choice', visual: 'transfer', scene: '', text: '용산역(1호선)에서 신사역(3호선)으로 가요. 어느 역에서 갈아탈까요?',
+          sub: '두 노선이 만나는 역을 찾아보세요.',
+          options: [
+            { ic: '🚉', label: '서울역' }, { ic: '🚉', label: '종로3가역' }, { ic: '🚉', label: '시청역' }
+          ], answer: 1,
+          why: '1호선과 3호선이 만나는 역은 종로3가역이에요. 여기에서 갈아타요.' },
+        { type: 'choice', scene: '🪧', text: '환승할 때는 무엇을 보고 따라가면 될까요?',
+          options: [
+            { ic: '🪧', label: '갈아탈 호선 번호가 적힌 표지판' },
+            { ic: '👣', label: '앞에 가는 사람' },
+            { ic: '🏪', label: '가장 가까운 가게' }
+          ], answer: 0,
+          why: '역 안에 갈아탈 호선을 알려주는 표지판이 있어요. 화살표를 따라가요.' }
+      ]
+    },
+    {
+      id: 'bus1', emoji: '🚌', title: '버스 타기', chapter: '2. 버스(1)',
+      desc: '버스를 타기 전에 알아야 할 것',
+      steps: [
+        { type: 'choice', scene: '🚏', text: '버스를 타기 전에 가장 먼저 확인해야 하는 것은 무엇일까요?',
+          options: [
+            { ic: '🔢', label: '내가 탈 버스의 번호' },
+            { ic: '🎨', label: '버스의 색깔' },
+            { ic: '🪑', label: '빈자리가 있는지' }
+          ], answer: 0,
+          why: '번호가 다르면 다른 곳으로 가요. 버스 번호를 꼭 확인해요.' },
+        { type: 'choice', scene: '🚌🚌', text: '내가 탈 버스는 7024번이에요. 어느 버스를 탈까요?',
+          options: [
+            { ic: '🟩', label: '7024번 버스' }, { ic: '🟦', label: '4212번 버스' }, { ic: '🟥', label: '2번 버스' }
+          ], answer: 0,
+          why: '버스 앞과 옆에 번호가 크게 적혀 있어요. 같은 번호를 타요.' },
+        { type: 'choice', scene: '💳🚌', text: '버스에 탈 때 카드는 어떻게 할까요?',
+          options: [
+            { ic: '💳', label: '단말기에 카드를 찍어요' },
+            { ic: '👋', label: '그냥 인사만 하고 들어가요' },
+            { ic: '🎒', label: '가방에 넣어 둬요' }
+          ], answer: 0,
+          why: '탈 때 카드를 찍고, 내릴 때도 한 번 더 찍어요.' }
+      ]
+    },
+    {
+      id: 'bus2', emoji: '🔔', title: '버스에서 내리기', chapter: '2. 버스(2)',
+      desc: '안내 방송을 듣고 벨을 눌러요',
+      steps: [
+        { type: 'choice', scene: '📢', text: '버스에서 "다음 정류장은 가남역입니다" 방송이 나왔어요. 무슨 뜻일까요?',
+          options: [
+            { ic: '➡️', label: '곧 가남역에 도착해요' },
+            { ic: '📍', label: '지금 여기가 가남역이에요' },
+            { ic: '⬅️', label: '가남역을 이미 지나갔어요' }
+          ], answer: 0,
+          why: '"다음 정류장은 ○○입니다"는 곧 도착한다는 뜻이에요. 이때 벨을 눌러요.' },
+        { type: 'bell', target: '가남역',
+          text: '가남역에서 내려요. "다음 정류장은 가남역입니다" 방송이 나오면 벨을 누르세요!',
+          stops: ['시청 앞', '중앙시장', '가남역', '푸른초등학교'],
+          why: '내리기 전 정류장 방송을 듣고 벨을 누르면 안전하게 내릴 수 있어요.' },
+        { type: 'choice', scene: '😮🚌', text: '벨을 누르지 않으면 어떻게 될까요?',
+          options: [
+            { ic: '➡️', label: '내리려던 정류장을 지나쳐요' },
+            { ic: '🛑', label: '버스가 알아서 멈춰요' },
+            { ic: '🎁', label: '아무 일도 없어요' }
+          ], answer: 0,
+          why: '벨을 눌러야 기사님이 알고 세워 주세요. 미리 눌러요.' }
+      ]
+    },
+    {
+      id: 'map', emoji: '🗺️', title: '길 찾기', chapter: '3. 길 찾기',
+      desc: '지도 어플로 가는 길을 찾아요',
+      steps: [
+        { type: 'sequence', text: '지도 어플로 길을 찾는 순서예요. 순서대로 눌러 보세요.',
+          items: ['지도 어플을 열어요', '가고 싶은 곳을 검색해요', '"길찾기"를 눌러요', '안내를 따라서 가요'],
+          why: '검색하고 길찾기를 누르면 어떻게 가는지 알려줘요.' },
+        { type: 'choice', scene: '📄🏫', text: '가정통신문에 "○○학교 정문 앞"이라고 적혀 있어요. 지도에 무엇을 검색할까요?',
+          options: [
+            { ic: '🏫', label: '○○학교' }, { ic: '🍜', label: '맛있는 식당' }, { ic: '🏠', label: '우리 집' }
+          ], answer: 0,
+          why: '가야 할 장소의 이름을 그대로 검색하면 돼요.' },
+        { type: 'choice', scene: '🚶🚌🚇', text: '지도 어플은 무엇을 알려줄까요?',
+          options: [
+            { ic: '🧭', label: '걸어서·버스로·지하철로 가는 방법' },
+            { ic: '🌦️', label: '내일 날씨' },
+            { ic: '🎵', label: '좋아하는 노래' }
+          ], answer: 0,
+          why: '어떤 교통수단으로 얼마나 걸리는지 알려줘요.' }
+      ]
+    },
+    {
+      id: 'kiosk', emoji: '🏪', title: '무인 매장', chapter: '4. 무인 매장',
+      desc: '혼자서 물건을 사요',
+      steps: [
+        { type: 'choice', scene: '🏪❓', text: '무인 매장에는 무엇이 없을까요?',
+          options: [
+            { ic: '🧑‍💼', label: '계산해 주는 직원' }, { ic: '🍫', label: '과자' }, { ic: '🚪', label: '문' }
+          ], answer: 0,
+          why: '무인 매장은 직원이 없어요. 그래서 내가 스스로 계산해요.' },
+        { type: 'sequence', text: '무인 매장에서 물건을 사는 순서예요. 순서대로 눌러 보세요.',
+          items: ['살 물건을 골라요', '계산대에 바코드를 찍어요', '카드를 넣거나 찍어요', '영수증과 물건을 챙겨요'],
+          why: '바코드를 찍고 카드로 계산하면 끝이에요.' },
+        { type: 'choice', scene: '🤔🖥️', text: '기계 사용이 어려워요. 어떻게 할까요?',
+          options: [
+            { ic: '📞', label: '기계에 있는 도움 전화 버튼을 눌러요' },
+            { ic: '🏃', label: '물건을 그냥 들고 나가요' },
+            { ic: '👊', label: '기계를 세게 두드려요' }
+          ], answer: 0,
+          why: '어려울 때는 도움을 요청하면 돼요. 물건을 계산하지 않고 나가면 안 돼요.' }
+      ]
+    },
+    {
+      id: 'cafe', emoji: '☕', title: '카페 이용하기', chapter: '6. 카페',
+      desc: '음료를 주문하고 받아요',
+      steps: [
+        { type: 'sequence', text: '카페에서 음료를 마시는 순서예요. 순서대로 눌러 보세요.',
+          items: ['메뉴판을 보고 음료를 골라요', '카운터에서 주문해요', '돈이나 카드로 계산해요', '진동벨이 울리면 음료를 받아요'],
+          why: '주문하고 계산한 다음, 진동벨이 울리면 받으러 가요.' },
+        { type: 'choice', scene: '📳', text: '받은 진동벨이 "부르르" 울려요. 어떻게 할까요?',
+          options: [
+            { ic: '🚶', label: '카운터에 가서 음료를 받아요' },
+            { ic: '🔕', label: '계속 앉아서 기다려요' },
+            { ic: '🗑️', label: '진동벨을 버려요' }
+          ], answer: 0,
+          why: '진동벨이 울리면 음료가 다 됐다는 뜻이에요. 벨을 가지고 카운터에 가요.' },
+        { type: 'choice', scene: '🥤🧋', text: '차가운 음료를 마시고 싶어요. 뭐라고 주문할까요?',
+          options: [
+            { ic: '🧊', label: '"아이스로 주세요"' },
+            { ic: '♨️', label: '"뜨겁게 주세요"' },
+            { ic: '🤫', label: '아무 말도 안 해요' }
+          ], answer: 0,
+          why: '차가운 것은 "아이스", 따뜻한 것은 "따뜻하게(핫)"라고 말해요.' }
+      ]
+    },
+    {
+      id: 'cinema', emoji: '🎬', title: '영화관 좌석 찾기', chapter: '7. 영화관(1)(2)',
+      desc: '입장권을 보고 내 자리를 찾아요',
+      steps: [
+        { type: 'choice', scene: '🎟️', text: '영화관에 들어가기 전에 꼭 필요한 것은 무엇일까요?',
+          options: [
+            { ic: '🎟️', label: '영화 입장권(티켓)' }, { ic: '🍿', label: '팝콘' }, { ic: '🧸', label: '인형' }
+          ], answer: 0,
+          why: '입장권이 있어야 들어갈 수 있어요. 입장권에 상영관과 좌석이 적혀 있어요.' },
+        { type: 'seat', ticket: { row: 'A', num: 5 }, text: '입장권에 적힌 자리를 찾아 눌러 보세요.',
+          why: '글자(열)를 먼저 찾고, 그 줄에서 숫자(번)를 찾으면 돼요.' },
+        { type: 'seat', ticket: { row: 'C', num: 3 }, text: '이번에는 다른 자리예요. 찾아서 눌러 보세요.',
+          why: '내 자리에 앉아야 다른 사람과 겹치지 않아요.' },
+        { type: 'choice', scene: '😯🪑', text: '내 자리에 다른 사람이 앉아 있어요. 어떻게 할까요?',
+          options: [
+            { ic: '🎟️', label: '"여기 제 자리예요"라고 입장권을 보여줘요' },
+            { ic: '😠', label: '큰 소리로 화를 내요' },
+            { ic: '🚶', label: '아무 자리에나 앉아요' }
+          ], answer: 0,
+          why: '입장권을 보여주며 이야기하면 돼요. 어려우면 직원에게 도움을 요청해요.' }
+      ]
+    },
+    {
+      id: 'hospital', emoji: '🏥', title: '병원 찾아가기', chapter: '8. 병원',
+      desc: '아픈 곳에 맞는 병원을 골라요',
+      steps: [
+        { type: 'choice', scene: '🦵🩹', text: '넘어져서 다리를 다쳤어요. 어느 병원에 갈까요?',
+          options: [
+            { ic: '🦴', label: '정형외과' }, { ic: '👁️', label: '안과' }, { ic: '🦷', label: '치과' }
+          ], answer: 0,
+          why: '뼈나 관절, 다친 곳은 정형외과에 가요.' },
+        { type: 'choice', scene: '👂😖', text: '귀가 아프고 코가 막혔어요. 어느 병원에 갈까요?',
+          options: [
+            { ic: '👂', label: '이비인후과' }, { ic: '🦴', label: '정형외과' }, { ic: '👁️', label: '안과' }
+          ], answer: 0,
+          why: '귀·코·목이 아프면 이비인후과에 가요.' },
+        { type: 'choice', scene: '🦷😣', text: '이가 아파서 밥을 못 먹겠어요. 어느 병원에 갈까요?',
+          options: [
+            { ic: '🦷', label: '치과' }, { ic: '👂', label: '이비인후과' }, { ic: '🩺', label: '내과' }
+          ], answer: 0,
+          why: '이가 아프면 치과에 가요.' },
+        { type: 'choice', scene: '🤒🌡️', text: '열이 나고 기침이 나요. 어느 병원에 갈까요?',
+          options: [
+            { ic: '🩺', label: '내과' }, { ic: '🦴', label: '정형외과' }, { ic: '👁️', label: '안과' }
+          ], answer: 0,
+          why: '열, 기침, 배 아픈 것은 내과에 가요.' },
+        { type: 'choice', scene: '📱🔍', text: '가까운 병원을 모르겠어요. 어떻게 찾을까요?',
+          options: [
+            { ic: '📱', label: '휴대폰에 "주변 병원"이라고 검색해요' },
+            { ic: '🛏️', label: '그냥 참고 누워 있어요' },
+            { ic: '🍬', label: '사탕을 먹어요' }
+          ], answer: 0,
+          why: '"주변 병원"을 검색하면 가까운 병원과 진료 시간을 알 수 있어요.' }
+      ]
+    },
+    {
+      id: 'mart', emoji: '🛒', title: '마트에서 물건 찾기', chapter: '10. 마트(1)(2)',
+      desc: '층별 안내를 보고 물건을 찾아요',
+      steps: [
+        { type: 'choice', visual: 'mart', scene: '', text: '우유를 사려고 해요. 몇 층으로 갈까요?',
+          sub: '층별 안내판을 보세요.',
+          options: [{ ic: '1️⃣', label: '1층' }, { ic: '2️⃣', label: '2층' }, { ic: '3️⃣', label: '3층' }, { ic: '4️⃣', label: '4층' }],
+          answer: 0, why: '우유는 먹는 것이니까 1층 식품 코너에 있어요.' },
+        { type: 'choice', visual: 'mart', scene: '', text: '텔레비전을 사려고 해요. 몇 층으로 갈까요?',
+          sub: '층별 안내판을 보세요.',
+          options: [{ ic: '1️⃣', label: '1층' }, { ic: '2️⃣', label: '2층' }, { ic: '3️⃣', label: '3층' }, { ic: '4️⃣', label: '4층' }],
+          answer: 2, why: '텔레비전은 가전제품이니까 3층에 있어요.' },
+        { type: 'choice', visual: 'mart', scene: '', text: '겨울에 입을 옷을 사려고 해요. 몇 층으로 갈까요?',
+          sub: '층별 안내판을 보세요.',
+          options: [{ ic: '1️⃣', label: '1층' }, { ic: '2️⃣', label: '2층' }, { ic: '3️⃣', label: '3층' }, { ic: '4️⃣', label: '4층' }],
+          answer: 3, why: '옷은 4층 의류 코너에 있어요.' },
+        { type: 'choice', visual: 'mart', scene: '', text: '휴지와 세제를 사려고 해요. 몇 층으로 갈까요?',
+          sub: '층별 안내판을 보세요.',
+          options: [{ ic: '1️⃣', label: '1층' }, { ic: '2️⃣', label: '2층' }, { ic: '3️⃣', label: '3층' }, { ic: '4️⃣', label: '4층' }],
+          answer: 1, why: '휴지와 세제는 생활용품이니까 2층에 있어요.' },
+        { type: 'choice', scene: '🛒💳', text: '물건을 다 골랐어요. 이제 무엇을 할까요?',
+          options: [
+            { ic: '💳', label: '계산대에서 계산을 해요' },
+            { ic: '🏃', label: '그냥 들고 나가요' },
+            { ic: '🔙', label: '물건을 아무 데나 놓고 가요' }
+          ], answer: 0,
+          why: '고른 물건은 꼭 계산대에서 계산하고 나가요.' }
+      ]
+    }
+  ];
+
+  /* ==================== 그림 자료 ==================== */
+  function buildVisual(name) {
+    var box = el('div', { class: 'visual' });
+    if (name === 'line1') {
+      var stops = ['영등포', '용산', '서울역', '시청', '종각'];
+      var svg = ['<svg viewBox="0 0 620 130" role="img" aria-label="1호선 노선도">'];
+      svg.push('<line x1="70" y1="62" x2="550" y2="62" stroke="#2E5FA3" stroke-width="9" stroke-linecap="round"/>');
+      svg.push('<text x="70" y="30" text-anchor="start" font-size="17" font-family="sans-serif" fill="#5A7183">◀ 신창 방면</text>');
+      svg.push('<text x="550" y="30" text-anchor="end" font-size="17" font-family="sans-serif" fill="#5A7183">청량리 방면 ▶</text>');
+      stops.forEach(function (s, i) {
+        var x = 70 + i * 120;
+        svg.push('<circle cx="' + x + '" cy="62" r="13" fill="#FFFFFF" stroke="#2E5FA3" stroke-width="6"/>');
+        svg.push('<text x="' + x + '" y="103" text-anchor="middle" font-size="19" font-family="sans-serif" fill="#1F3340">' + s + '</text>');
+      });
+      svg.push('</svg>');
+      box.innerHTML = svg.join('');
+      box.appendChild(el('p', { class: 'vis-cap', text: '지하철 1호선 노선도' }));
+    } else if (name === 'transfer') {
+      var g = ['<svg viewBox="0 0 620 215" role="img" aria-label="1호선과 3호선 환승 노선도">'];
+      // 1호선 — 가로선 (용산 · 서울역 · 종로3가)
+      g.push('<line x1="150" y1="62" x2="480" y2="62" stroke="#2E5FA3" stroke-width="9" stroke-linecap="round"/>');
+      g.push('<text x="18" y="68" text-anchor="start" font-size="17" font-family="sans-serif" font-weight="bold" fill="#2E5FA3">1호선</text>');
+      ['용산', '서울역', '종로3가'].forEach(function (s, i) {
+        var x = 150 + i * 165;
+        g.push('<circle cx="' + x + '" cy="62" r="12" fill="#FFF" stroke="#2E5FA3" stroke-width="6"/>');
+        g.push('<text x="' + x + '" y="36" text-anchor="middle" font-size="18" font-family="sans-serif" fill="#1F3340">' + s + '</text>');
+      });
+      // 3호선 — 종로3가에서 아래로 꺾여 신사까지
+      g.push('<line x1="480" y1="62" x2="480" y2="152" stroke="#E07B39" stroke-width="9" stroke-linecap="round"/>');
+      g.push('<line x1="480" y1="152" x2="240" y2="152" stroke="#E07B39" stroke-width="9" stroke-linecap="round"/>');
+      g.push('<text x="215" y="158" text-anchor="end" font-size="17" font-family="sans-serif" font-weight="bold" fill="#E07B39">3호선</text>');
+      [['신사', 240], ['안국', 480]].forEach(function (o) {
+        g.push('<circle cx="' + o[1] + '" cy="152" r="12" fill="#FFF" stroke="#E07B39" stroke-width="6"/>');
+        g.push('<text x="' + o[1] + '" y="188" text-anchor="middle" font-size="18" font-family="sans-serif" fill="#1F3340">' + o[0] + '</text>');
+      });
+      // 환승역 표시 — 두 노선이 만나는 종로3가
+      g.push('<circle cx="480" cy="62" r="15" fill="#FFF" stroke="#8557A8" stroke-width="7"/>');
+      g.push('<text x="508" y="68" text-anchor="start" font-size="15" font-family="sans-serif" fill="#8557A8">◀ 환승역</text>');
+      g.push('</svg>');
+      box.innerHTML = g.join('');
+      box.appendChild(el('p', { class: 'vis-cap', text: '두 노선이 만나는 역에서 갈아탈 수 있어요' }));
+    } else if (name === 'mart') {
+      box = el('div', { class: 'floors' }, [el('div', { class: 'fh', text: '층별 안내' })]);
+      [['4층', '의류 · 신발'], ['3층', '가전 · 컴퓨터'], ['2층', '생활용품 · 문구'], ['1층', '식품 · 과일 · 우유']]
+        .forEach(function (r) {
+          box.appendChild(el('div', { class: 'fr' }, [
+            el('div', { class: 'fn', text: r[0] }),
+            el('div', { class: 'fd', text: r[1] })
+          ]));
+        });
+    }
+    return box;
+  }
+
+  /* ==================== 화면 전환 ==================== */
+  var screens = {
+    home: document.getElementById('screen-home'),
+    play: document.getElementById('screen-play'),
+    done: document.getElementById('screen-done')
+  };
+  var stageEl = document.getElementById('stage');
+  var feedbackEl = document.getElementById('feedback');
+  var playFoot = document.getElementById('playFoot');
+  var btnNext = document.getElementById('btnNext');
+  var btnBack = document.getElementById('btnBack');
+  var btnHome = document.getElementById('btnHome');
+  var topTitle = document.getElementById('topTitle');
+  var dotsEl = document.getElementById('stepDots');
+
+  function show(name) {
+    Object.keys(screens).forEach(function (k) { screens[k].hidden = k !== name; });
+    btnBack.hidden = (name === 'home');
+    btnHome.hidden = (name !== 'home');
+  }
+
+  var state = { mission: null, idx: 0, missed: 0 };
+  var bellTimers = [];
+  function clearBell() { bellTimers.forEach(clearTimeout); bellTimers = []; }
+
+  /* ==================== 미션 고르기 화면 ==================== */
+  var grid = document.getElementById('missionGrid');
+  document.getElementById('starTotal').textContent = MISSIONS.length;
+
+  function renderHome() {
+    clearBell(); stopSpeak();
+    topTitle.textContent = '일상생활기술 연습';
+    grid.innerHTML = '';
+    var done = 0;
+    MISSIONS.forEach(function (m) {
+      var isDone = !!(progress[m.id] && progress[m.id].done);
+      if (isDone) done++;
+      var card = el('button', { class: 'mcard' + (isDone ? ' done' : ''), type: 'button',
+                                'aria-label': m.title + '. ' + m.desc + (isDone ? '. 완료했어요' : '') }, [
+        el('span', { class: 'mcard-ic', 'aria-hidden': 'true', text: m.emoji }),
+        el('span', { class: 'mcard-title', text: m.title }),
+        el('span', { class: 'mcard-desc', text: m.desc }),
+        el('span', { class: 'mcard-ch', text: m.chapter })
+      ]);
+      if (isDone) card.appendChild(el('span', { class: 'mcard-star', 'aria-hidden': 'true', text: '⭐' }));
+      card.addEventListener('click', function () { sTap(); openMission(m); });
+      grid.appendChild(card);
+    });
+    document.getElementById('starCount').textContent = done;
+    show('home');
+  }
+
+  /* ==================== 미션 진행 ==================== */
+  function openMission(m) {
+    state.mission = m; state.idx = 0; state.missed = 0;
+    topTitle.textContent = m.emoji + ' ' + m.title;
+    show('play');
+    renderStep();
+  }
+
+  function renderDots() {
+    dotsEl.innerHTML = '';
+    state.mission.steps.forEach(function (_, i) {
+      dotsEl.appendChild(el('span', {
+        class: 'dot' + (i < state.idx ? ' ok' : (i === state.idx ? ' cur' : '')),
+        'aria-hidden': 'true'
+      }));
+    });
+  }
+
+  function renderStep() {
+    clearBell();
+    var step = state.mission.steps[state.idx];
+    feedbackEl.hidden = true;
+    playFoot.hidden = true;
+    stageEl.innerHTML = '';
+    renderDots();
+
+    if (step.visual) stageEl.appendChild(buildVisual(step.visual));
+    if (step.scene) stageEl.appendChild(el('div', { class: 'scene', 'aria-hidden': 'true', text: step.scene }));
+    stageEl.appendChild(el('h2', { class: 'question', text: step.text }));
+    if (step.sub) stageEl.appendChild(el('p', { class: 'qsub', text: step.sub }));
+
+    if (step.type === 'ox') renderOX(step);
+    else if (step.type === 'choice') renderChoice(step);
+    else if (step.type === 'seat') renderSeat(step);
+    else if (step.type === 'sequence') renderSequence(step);
+    else if (step.type === 'bell') renderBell(step);
+
+    speak(step.text);
+  }
+
+  function lockAll(nodes) { nodes.forEach(function (n) { n.disabled = true; }); }
+
+  function correct(step, extra) {
+    sRight();
+    feedbackEl.className = 'feedback ok';
+    feedbackEl.innerHTML = '';
+    feedbackEl.appendChild(el('span', { class: 'fic', 'aria-hidden': 'true', text: '🎉' }));
+    feedbackEl.appendChild(el('div', {}, [
+      el('div', {}, [el('b', { text: extra || '잘했어요!' })]),
+      el('div', { text: step.why || '' })
+    ]));
+    feedbackEl.hidden = false;
+    playFoot.hidden = false;
+    btnNext.textContent = (state.idx >= state.mission.steps.length - 1) ? '미션 끝내기 ✓' : '다음으로 →';
+    speak((extra || '잘했어요') + '. ' + (step.why || ''));
+  }
+
+  function tryAgain(msg) {
+    state.missed++;
+    sTryAgain();
+    feedbackEl.className = 'feedback no';
+    feedbackEl.innerHTML = '';
+    feedbackEl.appendChild(el('span', { class: 'fic', 'aria-hidden': 'true', text: '🤔' }));
+    feedbackEl.appendChild(el('div', {}, [
+      el('div', {}, [el('b', { text: '다시 한 번 해 볼까요?' })]),
+      el('div', { text: msg || '' })
+    ]));
+    feedbackEl.hidden = false;
+    speak('다시 한 번 해 볼까요? ' + (msg || ''));
+  }
+
+  /* ---- O / X ---- */
+  function renderOX(step) {
+    var row = el('div', { class: 'ox-row' });
+    var btns = [];
+    [{ v: true, cls: 'o', mark: 'O', lab: '맞아요' }, { v: false, cls: 'x', mark: 'X', lab: '아니에요' }]
+      .forEach(function (o) {
+        var b = el('button', { class: 'ox-btn ' + o.cls, type: 'button', 'aria-label': o.lab }, [
+          el('span', { class: 'mark', 'aria-hidden': 'true', text: o.mark }),
+          el('span', { class: 'lab', text: o.lab })
+        ]);
+        b.addEventListener('click', function () {
+          if (o.v === step.answer) { b.classList.add('right'); lockAll(btns); correct(step); }
+          else { b.classList.add('wrong'); tryAgain('힌트를 잘 읽고 다른 쪽을 눌러 보세요.'); }
+        });
+        btns.push(b); row.appendChild(b);
+      });
+    stageEl.appendChild(row);
+  }
+
+  /* ---- 여러 개 중 고르기 ---- */
+  function renderChoice(step) {
+    var wrap = el('div', { class: 'answers' });
+    var btns = [];
+    step.options.forEach(function (opt, i) {
+      var b = el('button', { class: 'ans-btn', type: 'button' }, [
+        el('span', { class: 'ic', 'aria-hidden': 'true', text: opt.ic }),
+        el('span', { text: opt.label })
+      ]);
+      b.addEventListener('click', function () {
+        if (i === step.answer) { b.classList.add('right'); lockAll(btns); correct(step); }
+        else { b.classList.add('wrong'); tryAgain('다른 것을 한번 눌러 보세요.'); }
+      });
+      btns.push(b); wrap.appendChild(b);
+    });
+    stageEl.appendChild(wrap);
+  }
+
+  /* ---- 영화관 좌석 찾기 ---- */
+  function renderSeat(step) {
+    var t = step.ticket;
+    stageEl.appendChild(el('div', { class: 'ticket' }, [
+      el('div', { class: 'tt', text: '🎟️ 영화 입장권' }),
+      el('div', { class: 'tseat' }, [
+        el('span', { text: t.row }), el('small', { text: '열' }),
+        el('span', { text: String(t.num) }), el('small', { text: '번' })
+      ])
+    ]));
+    stageEl.appendChild(el('div', { class: 'screen-bar', text: '스 크 린' }));
+    var board = el('div', { class: 'seat-board' });
+    var rows = ['A', 'B', 'C', 'D'];
+    var seats = [];
+    rows.forEach(function (r) {
+      var seatsWrap = el('div', { class: 'seats' });
+      for (var n = 1; n <= 8; n++) {
+        (function (rr, nn) {
+          var s = el('button', { class: 'seat', type: 'button', text: String(nn),
+                                 'aria-label': rr + '열 ' + nn + '번 자리' });
+          s.addEventListener('click', function () {
+            if (rr === t.row && nn === t.num) {
+              s.classList.add('right'); lockAll(seats); correct(step, '자리를 찾았어요!');
+            } else {
+              s.classList.add('wrong');
+              setTimeout(function () { s.classList.remove('wrong'); }, 700);
+              tryAgain('입장권의 ' + t.row + '열을 먼저 찾고, 그 줄에서 ' + t.num + '번을 찾아보세요.');
+            }
+          });
+          seats.push(s); seatsWrap.appendChild(s);
+        })(r, n);
+      }
+      board.appendChild(el('div', { class: 'seat-row' }, [
+        el('span', { class: 'rlab', text: r }), seatsWrap
+      ]));
+    });
+    stageEl.appendChild(board);
+  }
+
+  /* ---- 순서 맞추기 ---- */
+  function renderSequence(step) {
+    var order = step.items.map(function (_, i) { return i; });
+    for (var i = order.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = order[i]; order[i] = order[j]; order[j] = tmp;
+    }
+    var next = 0;
+    var list = el('div', { class: 'seq-list' });
+    var nodes = [];
+    order.forEach(function (origIdx) {
+      var b = el('button', { class: 'seq-item', type: 'button' }, [
+        el('span', { class: 'num', 'aria-hidden': 'true', text: '?' }),
+        el('span', { text: step.items[origIdx] })
+      ]);
+      b.addEventListener('click', function () {
+        if (b.classList.contains('picked')) return;
+        if (origIdx === next) {
+          next++;
+          b.classList.add('picked');
+          b.querySelector('.num').textContent = String(next);
+          sTap();
+          if (next === step.items.length) { lockAll(nodes); correct(step, '순서를 다 맞췄어요!'); }
+        } else {
+          b.classList.add('shake');
+          setTimeout(function () { b.classList.remove('shake'); }, 320);
+          tryAgain('가장 먼저 해야 하는 것부터 눌러 보세요.');
+        }
+      });
+      nodes.push(b); list.appendChild(b);
+    });
+    stageEl.appendChild(list);
+  }
+
+  /* ---- 버스 하차벨 ---- */
+  function renderBell(step) {
+    var scene = el('div', { class: 'bus-scene' });
+    scene.appendChild(el('div', { class: 'bus-target', text: '🚌 ' + step.target + '에서 내려요' }));
+    var sign = el('div', { class: 'bus-sign', text: '곧 출발합니다' });
+    scene.appendChild(sign);
+    var bell = el('button', { class: 'bell-btn', type: 'button', 'aria-label': '하차벨 누르기',
+                              html: '🔔<br>내려요' });
+    scene.appendChild(bell);
+    stageEl.appendChild(scene);
+
+    var targetIdx = step.stops.indexOf(step.target);
+    var cur = -1, done = false;
+
+    function endRound(ok, msg) {
+      if (done) return;
+      done = true; clearBell(); bell.disabled = true;
+      if (ok) { sBell(); correct(step, '딩동! 잘 눌렀어요'); }
+      else {
+        tryAgain(msg);
+        var retry = el('button', { class: 'btn btn-ghost', type: 'button', text: '🔁 다시 해 보기' });
+        retry.addEventListener('click', function () { sTap(); renderStep(); });
+        scene.appendChild(el('div', { style: 'display:flex;justify-content:center;margin-top:14px' }, [retry]));
+      }
+    }
+
+    bell.addEventListener('click', function () {
+      if (done) return;
+      if (cur === targetIdx) endRound(true);
+      else if (cur > targetIdx) endRound(false, step.target + '을(를) 지나쳤어요. "다음 정류장은 ' + step.target + '입니다" 방송에서 눌러요.');
+      else endRound(false, '아직 ' + step.target + ' 방송이 나오지 않았어요. 방송을 듣고 눌러요.');
+    });
+
+    step.stops.forEach(function (s, i) {
+      bellTimers.push(setTimeout(function () {
+        if (done) return;
+        cur = i;
+        var line = '다음 정류장은 ' + s + '입니다';
+        sign.textContent = line;
+        sAnnounce();
+        speak(line);
+      }, 1200 + i * 3200));
+    });
+    bellTimers.push(setTimeout(function () {
+      if (!done) endRound(false, step.target + '을(를) 지나쳤어요. "다음 정류장은 ' + step.target + '입니다" 방송에서 눌러요.');
+    }, 1200 + step.stops.length * 3200));
+  }
+
+  /* ==================== 다음 / 완료 ==================== */
+  btnNext.addEventListener('click', function () {
+    sTap(); clearBell(); stopSpeak();
+    if (state.idx >= state.mission.steps.length - 1) finishMission();
+    else { state.idx++; renderStep(); }
+  });
+
+  function finishMission() {
+    var m = state.mission;
+    progress[m.id] = { done: true };
+    saveProgress();
+    var perfect = state.missed === 0;
+    document.getElementById('doneEmoji').textContent = perfect ? '🏆' : '🎉';
+    document.getElementById('doneTitle').textContent = m.title + ' 미션 성공!';
+    document.getElementById('doneText').textContent = perfect
+      ? '한 번도 틀리지 않았어요. 정말 잘했어요!'
+      : '끝까지 해냈어요. 참 잘했어요!';
+    show('done');
+    burstConfetti(); sCheer();
+    speak(m.title + ' 미션 성공! 참 잘했어요.');
+  }
+
+  document.getElementById('btnAgain').addEventListener('click', function () {
+    sTap(); openMission(state.mission);
+  });
+  document.getElementById('btnToHome').addEventListener('click', function () { sTap(); renderHome(); });
+  btnBack.addEventListener('click', function () { sTap(); renderHome(); });
+
+  document.getElementById('btnReset').addEventListener('click', function () {
+    if (!window.confirm('완료한 미션 기록을 모두 지울까요?')) return;
+    progress = {}; saveProgress(); renderHome();
+    showToast('기록을 지웠어요. 처음부터 다시 해요!');
+  });
+
+  renderHome();
+})();
+</script>
+</body>
+</html>
