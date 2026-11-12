@@ -273,16 +273,35 @@ const I={
 
 /* ================= 소리 ================= */
 let actx=null;
-function beep(f){
-  try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)();
-    const o=actx.createOscillator(),g=actx.createGain();
-    o.type='sine'; o.frequency.value=f||880; g.gain.value=.0001;
-    o.connect(g); g.connect(actx.destination); o.start();
-    g.gain.exponentialRampToValueAtTime(.1,actx.currentTime+.01);
-    g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+.16);
-    o.stop(actx.currentTime+.18);
+function ensureAudio(){
+  actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+  if(actx.state==='suspended') actx.resume();
+  return actx;
+}
+function tone(o){
+  try{
+    const ctx=ensureAudio();
+    const t0=ctx.currentTime+(o.delay||0);
+    const osc=ctx.createOscillator(),g=ctx.createGain();
+    osc.type=o.type||'sine';
+    osc.frequency.setValueAtTime(o.freq,t0);
+    if(o.sweepTo) osc.frequency.exponentialRampToValueAtTime(o.sweepTo,t0+o.duration);
+    g.gain.setValueAtTime(.0001,t0);
+    g.gain.linearRampToValueAtTime(o.gain||.15,t0+.015);
+    g.gain.exponentialRampToValueAtTime(.0001,t0+o.duration);
+    osc.connect(g).connect(ctx.destination);
+    osc.start(t0); osc.stop(t0+o.duration+.03);
   }catch(e){}
 }
+function sTap()    { tone({freq:820,duration:.07,type:'sine',gain:.1}); tone({freq:1180,duration:.08,type:'sine',gain:.08,delay:.05}); }
+function sNav()    { tone({freq:640,duration:.07,type:'square',gain:.07}); }
+function sScan()   { tone({freq:1900,duration:.08,type:'square',gain:.11}); }
+function sRemove() { tone({freq:520,duration:.1,type:'triangle',gain:.12,sweepTo:360}); }
+function sError()  { tone({freq:300,duration:.18,type:'square',gain:.09,sweepTo:200}); }
+function sCardIn() { tone({freq:240,duration:.24,type:'sawtooth',gain:.06,sweepTo:110}); }
+function sConfirm(){ tone({freq:660,duration:.1,type:'sine',gain:.13}); tone({freq:990,duration:.16,type:'sine',gain:.11,delay:.08}); }
+function sHelp()   { tone({freq:880,duration:.16,type:'sine',gain:.16}); tone({freq:660,duration:.22,type:'sine',gain:.14,delay:.18}); }
+function sCheer()  { [523.25,659.25,783.99,1046.5].forEach((f,i)=>tone({freq:f,duration:.28,type:'triangle',gain:.18,delay:i*.12})); }
 function say(t){ if(!S.speak||!t) return;
   try{ const u=new SpeechSynthesisUtterance(t); u.lang='ko-KR'; u.rate=.95;
     speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){} }
@@ -308,7 +327,7 @@ function choice(o){
   if(o.pressed!==undefined) b.setAttribute('aria-pressed',o.pressed?'true':'false');
   b.innerHTML=(o.pic?'<span class="pic">'+o.pic+'</span>':'')+'<span>'+o.label+'</span>'+
     (o.sub?'<span class="won">'+o.sub+'</span>':'');
-  b.addEventListener('click',()=>{ beep(); say(o.speak||o.label);
+  b.addEventListener('click',()=>{ sTap(); say(o.speak||o.label);
     setTimeout(o.act,S.speak?220:70); });
   return b;
 }
@@ -347,7 +366,7 @@ function scrScan(st){
     const b=el('button','tile'); b.type='button'; b.dataset.scan='1';
     b.innerHTML='<span class="pic">'+boxPic(m.color)+'</span>'+
       '<span class="nm">'+m.name+'</span><span class="pr">'+won(m.price)+'</span>';
-    b.addEventListener('click',()=>{ beep(1400); say(m.name+' 찍었어요'); addCart(m); });
+    b.addEventListener('click',()=>{ sScan(); say(m.name+' 찍었어요'); addCart(m); });
     shelf.appendChild(b);
   });
 
@@ -360,18 +379,18 @@ function scrScan(st){
     const q=el('div','qty');
     const minus=el('button',null,'−'), plus=el('button',null,'+'), n=el('b',null,String(it.qty));
     minus.dataset.scan='1'; plus.dataset.scan='1';
-    minus.addEventListener('click',e=>{e.stopPropagation(); beep(520);
+    minus.addEventListener('click',e=>{e.stopPropagation(); sRemove();
       it.qty--; if(it.qty<=0) cart.splice(idx,1); render();});
-    plus.addEventListener('click',e=>{e.stopPropagation(); beep(1400); it.qty++; render();});
+    plus.addEventListener('click',e=>{e.stopPropagation(); sScan(); it.qty++; render();});
     q.append(minus,n,plus); c.appendChild(q); list.appendChild(c);
   });
 
   const sum=el('div','sum');
   sum.appendChild(el('div','amt','<small>'+qtyAll()+'개</small>'+won(itemsTotal())));
   const clr=el('button','btn sub','전체 취소'); clr.dataset.scan='1';
-  clr.addEventListener('click',()=>{beep(440); cart=[]; render();});
+  clr.addEventListener('click',()=>{sError(); cart=[]; render();});
   const go=el('button','btn go','다 담았어요, 계산하기'); go.dataset.scan='1'; go.disabled=!cart.length;
-  go.addEventListener('click',()=>{ beep(); say('계산하기');
+  go.addEventListener('click',()=>{ sConfirm(); say('계산하기');
     setTimeout(()=>goto(S.level==='easy'?'pay':'bag'),S.speak?220:70); });
   sum.append(clr,go); cb.appendChild(sum);
 }
@@ -421,11 +440,12 @@ function scrCard(st){
   g.appendChild(choice({label:payWay==='카드'?'카드 넣기':'대기',pic:I.card,cls:'go',
     speak:payWay==='카드'?'카드를 넣습니다':'결제합니다',
     act:()=>{
+      sCardIn();
       const sl=document.getElementById('slot'); if(sl) sl.classList.add('in');
       p.innerHTML='<div class="spin"></div><p class="big">결제하는 중이에요</p><p>카드를 빼지 마세요</p>';
       g.innerHTML='';
       say('결제하는 중이에요');
-      setTimeout(()=>{ beep(1180); goto('receipt'); },1800);
+      setTimeout(()=>{ sCheer(); goto('receipt'); },1800);
     }}));
 }
 
@@ -472,7 +492,7 @@ function scrDone(st){
 }
 
 document.getElementById('helpBtn').addEventListener('click',()=>{
-  beep(700); say('직원을 부르고 있어요. 조금만 기다려요.');
+  sHelp(); say('직원을 부르고 있어요. 조금만 기다려요.');
   toast('🔔 직원을 부르고 있어요. 조금만 기다려요~');
 });
 
@@ -522,8 +542,8 @@ sheet.addEventListener('click',e=>{ if(e.target===sheet){sheet.hidden=true; star
   ['mouseup','mouseleave','touchend','touchcancel'].forEach(ev=>g.addEventListener(ev,end));
 })();
 
-document.getElementById('backBtn').addEventListener('click',()=>{beep(520); back();});
-document.getElementById('homeBtn').addEventListener('click',()=>{beep(440); reset();});
+document.getElementById('backBtn').addEventListener('click',()=>{sNav(); back();});
+document.getElementById('homeBtn').addEventListener('click',()=>{sNav(); reset();});
 document.addEventListener('keydown',e=>{
   if(!sheet.hidden) return;
   if(S.scan&&(e.code==='Space'||e.code==='Enter')){e.preventDefault(); choose();}

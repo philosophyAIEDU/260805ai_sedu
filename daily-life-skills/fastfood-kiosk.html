@@ -365,16 +365,35 @@ const I={
 
 /* ================= 소리 ================= */
 let actx=null;
-function beep(f){
-  try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)();
-    const o=actx.createOscillator(),g=actx.createGain();
-    o.type='sine'; o.frequency.value=f||880; g.gain.value=.0001;
-    o.connect(g); g.connect(actx.destination); o.start();
-    g.gain.exponentialRampToValueAtTime(.1,actx.currentTime+.01);
-    g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+.16);
-    o.stop(actx.currentTime+.18);
+function ensureAudio(){
+  actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+  if(actx.state==='suspended') actx.resume();
+  return actx;
+}
+function tone(o){
+  try{
+    const ctx=ensureAudio();
+    const t0=ctx.currentTime+(o.delay||0);
+    const osc=ctx.createOscillator(),g=ctx.createGain();
+    osc.type=o.type||'sine';
+    osc.frequency.setValueAtTime(o.freq,t0);
+    if(o.sweepTo) osc.frequency.exponentialRampToValueAtTime(o.sweepTo,t0+o.duration);
+    g.gain.setValueAtTime(.0001,t0);
+    g.gain.linearRampToValueAtTime(o.gain||.15,t0+.015);
+    g.gain.exponentialRampToValueAtTime(.0001,t0+o.duration);
+    osc.connect(g).connect(ctx.destination);
+    osc.start(t0); osc.stop(t0+o.duration+.03);
   }catch(e){}
 }
+function sTap()    { tone({freq:820,duration:.07,type:'sine',gain:.1}); tone({freq:1180,duration:.08,type:'sine',gain:.08,delay:.05}); }
+function sNav()    { tone({freq:640,duration:.07,type:'square',gain:.07}); }
+function sToggle() { tone({freq:700,duration:.07,type:'sine',gain:.1}); }
+function sAdd()    { tone({freq:880,duration:.07,type:'triangle',gain:.13}); tone({freq:1245,duration:.09,type:'triangle',gain:.1,delay:.05}); }
+function sRemove() { tone({freq:520,duration:.1,type:'triangle',gain:.12,sweepTo:360}); }
+function sError()  { tone({freq:300,duration:.18,type:'square',gain:.09,sweepTo:200}); }
+function sCardIn() { tone({freq:240,duration:.24,type:'sawtooth',gain:.06,sweepTo:110}); }
+function sConfirm(){ tone({freq:660,duration:.1,type:'sine',gain:.13}); tone({freq:990,duration:.16,type:'sine',gain:.11,delay:.08}); }
+function sCheer()  { [523.25,659.25,783.99,1046.5].forEach((f,i)=>tone({freq:f,duration:.28,type:'triangle',gain:.18,delay:i*.12})); }
 function say(t){ if(!S.speak||!t) return;
   try{ const u=new SpeechSynthesisUtterance(t); u.lang='ko-KR'; u.rate=.95;
     speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){} }
@@ -393,7 +412,7 @@ function choice(o){
   if(o.pressed!==undefined) b.setAttribute('aria-pressed',o.pressed?'true':'false');
   b.innerHTML=(o.pic?'<span class="pic">'+o.pic+'</span>':'')+'<span>'+o.label+'</span>'+
     (o.sub?'<span class="won">'+o.sub+'</span>':'');
-  b.addEventListener('click',()=>{ beep(); say(o.speak||o.label);
+  b.addEventListener('click',()=>{ sTap(); say(o.speak||o.label);
     setTimeout(o.act,S.speak?220:70); });
   return b;
 }
@@ -453,7 +472,7 @@ function scrMenu(st){
     cats.forEach(([id,nm])=>{
       const b=el('button'); b.textContent=nm; b.dataset.scan='1';
       b.setAttribute('aria-selected',id===cat?'true':'false');
-      b.addEventListener('click',()=>{ beep(660); cat=id; say(nm); render(); });
+      b.addEventListener('click',()=>{ sNav(); cat=id; say(nm); render(); });
       rail.appendChild(b);
     });
   }
@@ -465,7 +484,7 @@ function scrMenu(st){
       :(m.t==='set'?'<span class="tag set">세트</span>':'');
     b.innerHTML=tg+'<span class="pic">'+pic(m)+'</span>'+
       '<span class="nm">'+m.name+'</span><span class="pr">'+won(m.price)+'</span>';
-    b.addEventListener('click',()=>{ beep(); say(m.name);
+    b.addEventListener('click',()=>{ sTap(); say(m.name);
       if(m.t==='set' && S.level==='real') openOption(m); else addCart(m,false,'감자튀김','콜라',1); });
     grid.appendChild(b);
   });
@@ -481,18 +500,18 @@ function scrMenu(st){
     const q=el('div','qty');
     const minus=el('button',null,'−'), plus=el('button',null,'+'), n=el('b',null,String(it.qty));
     minus.dataset.scan='1'; plus.dataset.scan='1';
-    minus.addEventListener('click',e=>{e.stopPropagation(); beep(520);
+    minus.addEventListener('click',e=>{e.stopPropagation(); sRemove();
       it.qty--; if(it.qty<=0) cart.splice(idx,1); render();});
-    plus.addEventListener('click',e=>{e.stopPropagation(); beep(980); it.qty++; render();});
+    plus.addEventListener('click',e=>{e.stopPropagation(); sAdd(); it.qty++; render();});
     q.append(minus,n,plus); c.appendChild(q); list.appendChild(c);
   });
 
   const sum=el('div','sum');
   sum.appendChild(el('div','amt','<small>'+qtyAll()+'개</small>'+won(total())));
   const clr=el('button','btn sub','전체 취소'); clr.dataset.scan='1';
-  clr.addEventListener('click',()=>{beep(440); cart=[]; render();});
+  clr.addEventListener('click',()=>{sError(); cart=[]; render();});
   const go=el('button','btn go','주문하기'); go.dataset.scan='1'; go.disabled=!cart.length;
-  go.addEventListener('click',()=>{ beep(); say('주문하기');
+  go.addEventListener('click',()=>{ sConfirm(); say('주문하기');
     setTimeout(()=>goto(S.level==='easy'?'card':'pay'),S.speak?220:70); });
   sum.append(clr,go); cb.appendChild(sum);
 }
@@ -512,7 +531,7 @@ function openOption(m){
       const row=el('div','optrow');
       opts.forEach(o=>{ const b=el('button',null,o.l); b.dataset.scan='1';
         b.setAttribute('aria-pressed',o.v===cur?'true':'false');
-        b.addEventListener('click',()=>{beep(700); fn(o.v); draw();}); row.appendChild(b); });
+        b.addEventListener('click',()=>{sToggle(); fn(o.v); draw();}); row.appendChild(b); });
       box.appendChild(row);
     };
     add('사이드 변경',SIDES,side,v=>side=v);
@@ -523,16 +542,16 @@ function openOption(m){
     const q=el('div','optrow');
     const mi=el('button',null,'−'), pl=el('button',null,'+'), nn=el('button',null,String(qty));
     nn.style.flex='0 0 70px'; nn.disabled=true; mi.dataset.scan='1'; pl.dataset.scan='1';
-    mi.addEventListener('click',()=>{beep(520); qty=Math.max(1,qty-1); draw();});
-    pl.addEventListener('click',()=>{beep(980); qty=Math.min(9,qty+1); draw();});
+    mi.addEventListener('click',()=>{sRemove(); qty=Math.max(1,qty-1); draw();});
+    pl.addEventListener('click',()=>{sAdd(); qty=Math.min(9,qty+1); draw();});
     q.append(mi,nn,pl); box.appendChild(q);
 
     const price=(m.price+(large?700:0)+(side==='치즈볼'?500:0))*qty;
     const f=el('div','mfoot');
     const no=el('button','btn sub','취소'); no.dataset.scan='1';
     const ok=el('button','btn go','담기 · '+won(price)); ok.dataset.scan='1';
-    no.addEventListener('click',()=>{beep(440); close();});
-    ok.addEventListener('click',()=>{beep(); addCart(m,large,side,drink,qty); close();});
+    no.addEventListener('click',()=>{sError(); close();});
+    ok.addEventListener('click',()=>{sConfirm(); addCart(m,large,side,drink,qty); close();});
     f.append(no,ok); box.appendChild(f);
     scanItems=Array.from(box.querySelectorAll('[data-scan]')); scanAt=0;
     if(S.scan) startScanIn(box);
@@ -583,11 +602,12 @@ function scrCard(st){
   g.appendChild(choice({label:payWay==='카드'?'카드 넣기':'대기',pic:I.card,cls:'go',
     speak:payWay==='카드'?'카드를 넣습니다':'결제합니다',
     act:()=>{
+      sCardIn();
       const sl=document.getElementById('slot'); if(sl) sl.classList.add('in');
       p.innerHTML='<div class="spin"></div><p class="big">결제하는 중이에요</p><p>카드를 빼지 마세요</p>';
       g.innerHTML='';
       say('결제하는 중이에요');
-      setTimeout(()=>{ beep(1180); goto(S.level==='easy'?'done':'receipt'); },2000);
+      setTimeout(()=>{ sCheer(); goto(S.level==='easy'?'done':'receipt'); },2000);
     }}));
 }
 
@@ -684,8 +704,8 @@ sheet.addEventListener('click',e=>{ if(e.target===sheet){sheet.hidden=true; star
   ['mouseup','mouseleave','touchend','touchcancel'].forEach(ev=>g.addEventListener(ev,end));
 })();
 
-document.getElementById('backBtn').addEventListener('click',()=>{beep(520); back();});
-document.getElementById('homeBtn').addEventListener('click',()=>{beep(440); reset();});
+document.getElementById('backBtn').addEventListener('click',()=>{sNav(); back();});
+document.getElementById('homeBtn').addEventListener('click',()=>{sNav(); reset();});
 document.addEventListener('keydown',e=>{
   if(!sheet.hidden) return;
   if(S.scan&&(e.code==='Space'||e.code==='Enter')){e.preventDefault(); choose();}
