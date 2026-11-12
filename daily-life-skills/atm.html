@@ -220,16 +220,34 @@ const won=n=>n.toLocaleString('ko-KR')+'원';
 
 /* ================= 소리 ================= */
 let actx=null;
-function beep(f){
-  try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)();
-    const o=actx.createOscillator(),g=actx.createGain();
-    o.type='sine'; o.frequency.value=f||880; g.gain.value=.0001;
-    o.connect(g); g.connect(actx.destination); o.start();
-    g.gain.exponentialRampToValueAtTime(.1,actx.currentTime+.01);
-    g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+.16);
-    o.stop(actx.currentTime+.18);
+function ensureAudio(){
+  actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+  if(actx.state==='suspended') actx.resume();
+  return actx;
+}
+function tone(o){
+  try{
+    const ctx=ensureAudio();
+    const t0=ctx.currentTime+(o.delay||0);
+    const osc=ctx.createOscillator(),g=ctx.createGain();
+    osc.type=o.type||'sine';
+    osc.frequency.setValueAtTime(o.freq,t0);
+    if(o.sweepTo) osc.frequency.exponentialRampToValueAtTime(o.sweepTo,t0+o.duration);
+    g.gain.setValueAtTime(.0001,t0);
+    g.gain.linearRampToValueAtTime(o.gain||.15,t0+.015);
+    g.gain.exponentialRampToValueAtTime(.0001,t0+o.duration);
+    osc.connect(g).connect(ctx.destination);
+    osc.start(t0); osc.stop(t0+o.duration+.03);
   }catch(e){}
 }
+function sTap()    { tone({freq:820,duration:.07,type:'sine',gain:.1}); tone({freq:1180,duration:.08,type:'sine',gain:.08,delay:.05}); }
+function sNav()    { tone({freq:640,duration:.07,type:'square',gain:.07}); }
+function sKeypad() { tone({freq:760,duration:.05,type:'square',gain:.08}); }
+function sCardIn() { tone({freq:240,duration:.24,type:'sawtooth',gain:.06,sweepTo:110}); }
+function sCardOut(){ tone({freq:130,duration:.24,type:'sawtooth',gain:.06,sweepTo:280}); }
+function sConfirm(){ tone({freq:660,duration:.1,type:'sine',gain:.13}); tone({freq:990,duration:.16,type:'sine',gain:.11,delay:.08}); }
+function sCash()   { [1480,1760,2090].forEach((f,i)=>tone({freq:f,duration:.1,type:'triangle',gain:.14,delay:i*.08})); }
+function sCheer()  { [523.25,659.25,783.99,1046.5].forEach((f,i)=>tone({freq:f,duration:.28,type:'triangle',gain:.18,delay:i*.12})); }
 function say(t){ if(!S.speak||!t) return;
   try{ const u=new SpeechSynthesisUtterance(t); u.lang='ko-KR'; u.rate=.95;
     speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){} }
@@ -257,7 +275,7 @@ function choice(o){
   if(o.pressed!==undefined) b.setAttribute('aria-pressed',o.pressed?'true':'false');
   b.innerHTML=(o.pic?'<span class="pic">'+o.pic+'</span>':'')+'<span>'+o.label+'</span>'+
     (o.sub?'<span class="won">'+o.sub+'</span>':'')+(o.tag?'<span class="tag">'+o.tag+'</span>':'');
-  if(!o.disabled) b.addEventListener('click',()=>{ beep(); say(o.speak||o.label);
+  if(!o.disabled) b.addEventListener('click',()=>{ sTap(); say(o.speak||o.label);
     setTimeout(o.act,S.speak?220:70); });
   return b;
 }
@@ -276,6 +294,7 @@ function scrStart(st){
   w.appendChild(p);
   const g=el('div',{class:'grid one'}); w.appendChild(g);
   g.appendChild(choice({label:'카드 넣기',cls:'go',speak:'카드를 넣습니다',act:()=>{
+    sCardIn();
     const sl=document.getElementById('slot'); if(sl) sl.classList.add('in');
     setTimeout(()=>goto(S.level==='easy'?'menu':'pin'),900);
   }}));
@@ -295,7 +314,7 @@ function scrPin(st){
   };
   ['1','2','3','4','5','6','7','8','9','지움','0','←'].forEach(k=>{
     const b=el('button',{class:k.length>1?'sm':'','data-scan':'1',text:k});
-    b.addEventListener('click',()=>{ beep(780);
+    b.addEventListener('click',()=>{ sKeypad();
       if(k==='지움') pin='';
       else if(k==='←') pin=pin.slice(0,-1);
       else if(pin.length<4) pin+=k;
@@ -309,7 +328,7 @@ function scrPin(st){
   const okb=document.createElement('button');
   okb.className='choice go'; okb.type='button'; okb.dataset.scan='1';
   okb.innerHTML='<span>확인</span>';
-  okb.addEventListener('click',()=>{ beep(); say('확인');
+  okb.addEventListener('click',()=>{ sConfirm(); say('확인');
     setTimeout(()=>goto('menu'),S.speak?220:70); });
   g.appendChild(okb);
   paint();
@@ -350,7 +369,7 @@ function scrTypeAmount(st){
   const pad=el('div',{class:'pad'});
   ['1만','5만','10만','30만','지움','←'].forEach(k=>{
     const b=el('button',{class:'sm','data-scan':'1',text:k});
-    b.addEventListener('click',()=>{ beep(780);
+    b.addEventListener('click',()=>{ sKeypad();
       if(k==='지움') v=0;
       else if(k==='←') v=Math.max(0,v-10000);
       else v+=Number(k.replace('만',''))*10000;
@@ -364,7 +383,7 @@ function scrTypeAmount(st){
   const okb=document.createElement('button');
   okb.className='choice go'; okb.type='button'; okb.dataset.scan='1'; okb.disabled=true; okb.style.opacity='.4';
   okb.innerHTML='<span>다음</span>';
-  okb.addEventListener('click',()=>{ if(v<=0) return; beep(); amount=v; goto('confirm'); });
+  okb.addEventListener('click',()=>{ if(v<=0) return; sConfirm(); amount=v; goto('confirm'); });
   g.appendChild(okb);
 }
 
@@ -396,11 +415,12 @@ function scrProcessing(st){
   const p=el('div',{class:'panel'});
   p.innerHTML='<div class="spin"></div><p class="big">잠시만 기다려요</p>';
   w.appendChild(p);
-  setTimeout(()=>{ beep(1180); goto('takecard'); },1800);
+  setTimeout(()=>{ sConfirm(); goto('takecard'); },1800);
 }
 
 /* ---- 6. 카드 먼저 가져가기 ---- */
 function scrTakeCard(st){
+  sCardOut();
   const w=el('div',{class:'sheetwrap'}); st.appendChild(w);
   head('카드를 먼저 가져가세요','카드를 두고 가지 않도록 가장 먼저 챙겨요',w);
   const p=el('div',{class:'panel'});
@@ -414,6 +434,7 @@ function scrTakeCard(st){
 
 /* ---- 7. 현금 가져가기 (출금만) ---- */
 function scrTakeCash(st){
+  sCash();
   const w=el('div',{class:'sheetwrap'}); st.appendChild(w);
   head('현금을 가져가세요',null,w);
   const p=el('div',{class:'panel'});
@@ -434,6 +455,7 @@ function scrReceipt(st){
 
 /* ---- 9. 완료 ---- */
 function scrDone(st){
+  sCheer();
   const w=el('div',{class:'sheetwrap'}); st.appendChild(w);
   const p=el('div',{class:'panel'});
   p.innerHTML='<p class="big">거래가 끝났어요</p><p>이용해 주셔서 감사합니다</p>';
@@ -521,8 +543,8 @@ sheet.addEventListener('click',e=>{ if(e.target===sheet){sheet.hidden=true; star
   ['mouseup','mouseleave','touchend','touchcancel'].forEach(ev=>g.addEventListener(ev,end));
 })();
 
-document.getElementById('backBtn').addEventListener('click',()=>{beep(520); back();});
-document.getElementById('homeBtn').addEventListener('click',()=>{beep(440); reset();});
+document.getElementById('backBtn').addEventListener('click',()=>{sNav(); back();});
+document.getElementById('homeBtn').addEventListener('click',()=>{sNav(); reset();});
 document.addEventListener('keydown',e=>{
   if(!sheet.hidden) return;
   if(S.scan&&(e.code==='Space'||e.code==='Enter')){e.preventDefault(); choose();}
