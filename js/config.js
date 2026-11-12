@@ -58,7 +58,9 @@ const CFG = {
     { emoji: '🖍️', label: '크레용 놀이터', desc: '색칠·그리기·도장놀이를 소리와 함께 즐겨요',
       url: 'crayon-playground/index.html' },
     { emoji: '🏙️', label: '일상생활기술 연습', desc: '지하철·버스·카페·병원을 게임으로 연습해요',
-      url: 'daily-life-skills/index.html' }
+      url: 'daily-life-skills/index.html' },
+    { emoji: '☕', label: '카페 키오스크 연습', desc: '실제 키오스크처럼 메뉴를 고르고 주문해 봐요',
+      url: 'daily-life-skills/cafe-kiosk.html' }
   ],
 
   /* ---------- 주제 ---------- */
