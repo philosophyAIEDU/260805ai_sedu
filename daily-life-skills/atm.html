@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#163A5C">
+
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+body{font:14px system-ui,sans-serif}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>튼튼 은행 ATM</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+:root{
+  --bg:#EEF1F5; --surface:#FFFFFF; --surface-2:#F4F6F9; --surface-3:#E6EAF0;
+  --fg:#1A2230; --muted:#5B6473; --line:#D4DAE3;
+  --brand:#163A5C; --brand-soft:#DCE6F2; --accent:#C8860A; --accent-ink:#FFFFFF;
+  --warn:#B4541F;
+  --font-d:"Gothic A1","Noto Sans KR",system-ui,sans-serif;
+  --font-b:"Noto Sans KR","Gothic A1",system-ui,sans-serif;
+  --sc:1;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E131A; --surface:#171E29; --surface-2:#1E2633; --surface-3:#2A3444;
+  --fg:#E8ECF2; --muted:#9BA6B5; --line:#323D4D;
+  --brand:#6FA0D6; --brand-soft:#1E3550; --accent:#F0B429; --accent-ink:#1A1109;
+  --warn:#FF9A6B; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0E131A; --surface:#171E29; --surface-2:#1E2633; --surface-3:#2A3444;
+  --fg:#E8ECF2; --muted:#9BA6B5; --line:#323D4D;
+  --brand:#6FA0D6; --brand-soft:#1E3550; --accent:#F0B429; --accent-ink:#1A1109;
+  --warn:#FF9A6B; color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-b);
+  -webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+button{font-family:inherit;color:inherit;border:none;background:none;cursor:pointer}
+
+.kiosk{height:100%;display:flex;flex-direction:column;max-width:900px;margin:0 auto;
+  padding-left:max(10px,env(safe-area-inset-left,0px));
+  padding-right:max(10px,env(safe-area-inset-right,0px));
+  padding-block:8px;gap:8px}
+
+.bar{display:flex;align-items:center;gap:10px;flex-shrink:0;padding:2px 2px}
+.brand{font-family:var(--font-d);font-weight:900;color:var(--brand);letter-spacing:-.5px;
+  font-size:calc(clamp(16px,2.2vw,21px)*var(--sc));white-space:nowrap}
+.bar .sp{flex:1}
+.ghost{border:1px solid var(--line);background:var(--surface);border-radius:10px;
+  padding:9px 13px;font-weight:700;font-size:calc(13.5px*var(--sc));white-space:nowrap;text-decoration:none;color:inherit;display:inline-block}
+.gear{width:44px;height:44px;flex-shrink:0;border:1px solid var(--line);background:var(--surface);
+  border-radius:11px;display:grid;place-items:center;position:relative;overflow:hidden}
+.gear svg{width:20px;height:20px;opacity:.5}
+.gear .fill{position:absolute;inset:auto 0 0 0;height:0;background:var(--brand-soft);z-index:-1}
+
+.stage{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
+
+.sheetwrap{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+.ask{font-family:var(--font-d);font-weight:900;letter-spacing:-.8px;text-wrap:balance;margin:0;
+  font-size:calc(clamp(21px,3.6vw,33px)*var(--sc));line-height:1.25}
+.hint{color:var(--muted);margin:-6px 0 0;font-size:calc(14px*var(--sc))}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(2,1fr)}
+.grid.one{grid-template-columns:1fr}
+@media (min-width:700px){.grid.four{grid-template-columns:repeat(4,1fr)}}
+.choice{background:var(--surface);border:3px solid var(--line);border-radius:16px;
+  min-height:calc(clamp(96px,13vh,136px)*var(--sc));padding:12px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
+  font-family:var(--font-d);font-weight:700;font-size:calc(clamp(16px,2.3vw,21px)*var(--sc));
+  text-align:center;line-height:1.25;word-break:keep-all;transition:transform .07s,border-color .12s}
+.choice:active{transform:scale(.97)}
+.choice:hover{border-color:var(--brand)}
+.choice.go{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.choice[disabled]{opacity:.4;pointer-events:none}
+.choice .pic{width:calc(44px*var(--sc));height:calc(44px*var(--sc));color:var(--muted)}
+.choice .pic svg{width:100%;height:100%}
+.choice .won{font-family:var(--font-b);font-weight:500;color:var(--muted);
+  font-size:calc(12.5px*var(--sc))}
+.tag{display:inline-block;border-radius:6px;padding:2px 7px;margin-top:2px;
+  font-size:calc(10.5px*var(--sc));font-weight:700;letter-spacing:.3px;background:var(--surface-2);color:var(--muted)}
+.choice:focus-visible,.scan{outline:none;border-color:var(--accent)!important;
+  box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 30%,transparent)}
+
+.panel{background:var(--surface);border:2px solid var(--line);border-radius:18px;
+  padding:clamp(16px,3.4vw,28px);display:flex;flex-direction:column;align-items:center;
+  gap:12px;text-align:center}
+.panel p{margin:0;color:var(--muted);font-size:calc(15px*var(--sc))}
+.panel .big{font-family:var(--font-d);font-weight:900;color:var(--fg);
+  font-size:calc(clamp(19px,3vw,27px)*var(--sc));margin:0}
+.num{font-family:var(--font-d);font-weight:900;color:var(--brand);line-height:1;
+  font-size:clamp(40px,10vw,74px);font-variant-numeric:tabular-nums;letter-spacing:-2px}
+
+.slot{width:min(300px,86%);height:76px;border-radius:12px;background:var(--surface-2);
+  border:3px dashed var(--line);display:grid;place-items:center;color:var(--muted);
+  font-weight:700;position:relative;overflow:hidden}
+.slot .card{position:absolute;top:-74px;width:146px;height:92px;border-radius:9px;
+  background:linear-gradient(135deg,var(--brand),color-mix(in srgb,var(--brand) 50%,#000))}
+.slot.in .card{animation:drop 1s cubic-bezier(.4,0,.2,1) forwards}
+.slot.out .card{top:76px;animation:rise 1s cubic-bezier(.4,0,.2,1) forwards}
+@keyframes drop{to{top:76px;opacity:.12}}
+@keyframes rise{to{top:-74px;opacity:1}}
+.spin{width:40px;height:40px;border-radius:50%;border:5px solid var(--line);
+  border-top-color:var(--brand);animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+.pin{display:flex;gap:14px;justify-content:center}
+.pin b{width:calc(22px*var(--sc));height:calc(22px*var(--sc));border-radius:50%;
+  border:2px solid var(--line);background:var(--surface)}
+.pin b.on{background:var(--brand);border-color:var(--brand)}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:min(420px,100%)}
+.pad button{background:var(--surface);border:2px solid var(--line);border-radius:12px;
+  min-height:calc(58px*var(--sc));font-family:var(--font-d);font-weight:900;
+  font-size:calc(22px*var(--sc))}
+.pad button:active{background:var(--surface-3)}
+.pad button.sm{font-size:calc(15px*var(--sc))}
+.privacy{font-size:calc(12.5px*var(--sc));color:var(--muted)}
+
+.receipt{background:var(--surface);color:var(--fg);width:min(340px,100%);border-radius:4px;align-self:center;
+  padding:16px 18px;text-align:left;font-size:calc(12.8px*var(--sc));line-height:1.75;
+  border:1px solid var(--line);
+  font-family:ui-monospace,"Noto Sans KR",monospace;
+  box-shadow:0 10px 24px rgba(0,0,0,.14)}
+.receipt .ttl{text-align:center;font-weight:700;font-size:calc(15px*var(--sc));
+  letter-spacing:4px;margin-bottom:8px}
+.receipt .ln{border-top:1px dashed var(--line);margin:8px 0}
+.receipt .r{display:flex;justify-content:space-between;gap:10px}
+.receipt .r span:last-child{font-variant-numeric:tabular-nums;white-space:nowrap}
+.receipt .tot{font-weight:700;font-size:calc(14px*var(--sc))}
+
+.sheet{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);
+  display:flex;align-items:flex-end;justify-content:center}
+.sheet .box{background:var(--bg);width:min(560px,100%);max-height:90%;overflow-y:auto;
+  border-radius:20px 20px 0 0;padding:18px;
+  padding-left:max(18px,env(safe-area-inset-left,0px));
+  padding-right:max(18px,env(safe-area-inset-right,0px));
+  padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));
+  display:flex;flex-direction:column;gap:15px}
+.sheet h2{font-family:var(--font-d);font-size:20px;margin:0}
+.sheet .lead{font-size:13px;color:var(--muted);margin:-10px 0 0;line-height:1.6}
+.opt{display:flex;flex-direction:column;gap:6px}
+.opt .t{font-weight:700;font-size:14.5px}
+.opt .t small{display:block;font-weight:400;color:var(--muted);font-size:12.3px;margin-top:2px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{flex:1;min-width:62px;min-height:44px;border:2px solid var(--line);
+  background:var(--surface);border-radius:10px;font-weight:700;font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff}
+.tally{font-size:13px;color:var(--muted);text-align:center}
+.btn{border-radius:12px;font-family:var(--font-d);font-weight:900;
+  font-size:calc(16px*var(--sc));padding:15px 20px;white-space:nowrap}
+.btn.go{background:var(--accent);color:var(--accent-ink)}
+
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div class="kiosk">
+  <div class="bar">
+    <a class="ghost" href="index.html" aria-label="일상생활기술 연습 목록으로 돌아가기" title="목록으로">🏠 목록으로</a>
+    <div class="brand">튼튼 은행 ATM</div>
+    <div class="sp"></div>
+    <button class="ghost" id="backBtn">← 뒤로</button>
+    <button class="ghost" id="homeBtn">처음부터</button>
+    <button class="gear" id="gear" aria-label="선생님 설정 — 1초 길게 누르세요">
+      <span class="fill" id="gfill"></span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>
+    </button>
+  </div>
+  <div class="stage" id="stage"></div>
+</div>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="box">
+    <h2>선생님 설정</h2>
+    <p class="lead">학생에 따라 단계를 줄이세요. 바꾸면 처음 화면으로 돌아갑니다.</p>
+
+    <div class="opt"><span class="t">난이도
+      <small>실제처럼 = 비밀번호 직접 입력 · 금액 직접 입력 · 메뉴 4개 모두 보임</small></span>
+      <div class="seg" data-set="level">
+        <button data-v="real">실제처럼</button><button data-v="mid">조금 쉽게</button><button data-v="easy">아주 쉽게</button>
+      </div>
+    </div>
+
+    <div class="opt"><span class="t">글자·버튼 크기</span>
+      <div class="seg" data-set="big">
+        <button data-v="0">보통</button><button data-v="1">크게</button>
+      </div>
+    </div>
+
+    <div class="opt"><span class="t">소리로 읽어 주기 <small>질문과 안내를 말해 줍니다</small></span>
+      <div class="seg" data-set="speak">
+        <button data-v="1">켜기</button><button data-v="0">끄기</button>
+      </div>
+    </div>
+
+    <div class="opt"><span class="t">스캔 모드
+      <small>칸이 하나씩 켜집니다. 스위치·스페이스바로 선택. '아주 쉽게'와 함께 쓰세요</small></span>
+      <div class="seg" data-set="scan">
+        <button data-v="0">끄기</button><button data-v="3">3초</button><button data-v="5">5초</button><button data-v="8">8초</button>
+      </div>
+    </div>
+
+    <div class="tally" id="tally"></div>
+    <button class="btn go" id="closeSet">닫기</button>
+  </div>
+</div>
+
+<script>
+/* ================= 상태 ================= */
+const S={level:'real',big:0,speak:1,scan:0,done:0};
+let view='start', hist=[], pin='', txn='', amount=0, wantReceipt=true,
+    scanTimer=null, scanAt=0, scanItems=[];
+const BALANCE=128400;
+const PRESET=[30000,50000,100000,300000,500000];
+
+const won=n=>n.toLocaleString('ko-KR')+'원';
+
+/* ================= 소리 ================= */
+let actx=null;
+function beep(f){
+  try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    const o=actx.createOscillator(),g=actx.createGain();
+    o.type='sine'; o.frequency.value=f||880; g.gain.value=.0001;
+    o.connect(g); g.connect(actx.destination); o.start();
+    g.gain.exponentialRampToValueAtTime(.1,actx.currentTime+.01);
+    g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+.16);
+    o.stop(actx.currentTime+.18);
+  }catch(e){}
+}
+function say(t){ if(!S.speak||!t) return;
+  try{ const u=new SpeechSynthesisUtterance(t); u.lang='ko-KR'; u.rate=.95;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){} }
+
+/* ================= 이동 ================= */
+function goto(v,push){ if(push!==false) hist.push(view); view=v; render(); }
+function back(){ if(hist.length){ view=hist.pop(); render(); } }
+function reset(){ view='start'; hist=[]; pin=''; txn=''; amount=0; wantReceipt=true; render(); }
+
+/* ================= 그리기 ================= */
+const el=(t,a,k)=>{
+  const n=document.createElement(t);
+  if(a) Object.keys(a).forEach(key=>{
+    if(key==='text') n.textContent=a[key];
+    else if(key==='html') n.innerHTML=a[key];
+    else if(a[key]===true) n.setAttribute(key,'');
+    else if(a[key]!==false && a[key]!=null) n.setAttribute(key,a[key]);
+  });
+  (k||[]).forEach(c=>{ if(c) n.appendChild(c); });
+  return n;
+};
+function choice(o){
+  const b=el('button',{class:'choice'+(o.cls?' '+o.cls:''),type:'button','data-scan':'1',
+    disabled:o.disabled||false});
+  if(o.pressed!==undefined) b.setAttribute('aria-pressed',o.pressed?'true':'false');
+  b.innerHTML=(o.pic?'<span class="pic">'+o.pic+'</span>':'')+'<span>'+o.label+'</span>'+
+    (o.sub?'<span class="won">'+o.sub+'</span>':'')+(o.tag?'<span class="tag">'+o.tag+'</span>':'');
+  if(!o.disabled) b.addEventListener('click',()=>{ beep(); say(o.speak||o.label);
+    setTimeout(o.act,S.speak?220:70); });
+  return b;
+}
+function head(t,hint,node){
+  const h=el('h1',{class:'ask',text:t}); node.appendChild(h);
+  if(hint){ const p=el('p',{class:'hint',text:hint}); node.appendChild(p); }
+  say(t);
+}
+
+/* ---- 0. 시작 ---- */
+function scrStart(st){
+  const w=el('div',{class:'sheetwrap'}); st.appendChild(w);
+  head('ATM에 오셨어요','카드를 넣어 주세요',w);
+  const p=el('div',{class:'panel'});
+  p.innerHTML='<div class="slot" id="slot"><span>여기에 카드를 넣어요</span><div class="card"></div></div>';
+  w.appendChild(p);
+  const g=el('div',{class:'grid one'}); w.appendChild(g);
+  g.appendChild(choice({label:'카드 넣기',cls:'go',speak:'카드를 넣습니다',act:()=>{
+    const sl=document.getElementById('slot'); if(sl) sl.classList.add('in');
+    setTimeout(()=>goto(S.level==='easy'?'menu':'pin'),900);
+  }}));
+}
+
+/* ---- 1. 비밀번호 ---- */
+function scrPin(st){
+  const w=el('div',{class:'sheetwrap'}); st.appendChild(w);
+  head('비밀번호 4자리를 눌러 주세요','다른 사람이 못 보게 손으로 가려요',w);
+  const p=el('div',{class:'panel'});
+  const dots=el('div',{class:'pin'}); p.appendChild(dots);
+  const pad=el('div',{class:'pad'});
+  const paint=()=>{
+    dots.innerHTML='';
+    for(let i=0;i<4;i++) dots.appendChild(el('b',{class:i<pin.length?'on':''}));
+    okb.disabled=pin.length<4; okb.style.opacity=okb.disabled?'.4':'1';
+  };
+  ['1','2','3','4','5','6','7','8','9','지움','0','←'].forEach(k=>{
+    const b=el('button',{class:k.length>1?'sm':'','data-scan':'1',text:k});
+    b.addEventListener('click',()=>{ beep(780);
+      if(k==='지움') pin='';
+      else if(k==='←') pin=pin.slice(0,-1);
+      else if(pin.length<4) pin+=k;
+      paint(); });
+    pad.appendChild(b);
+  });
+  p.appendChild(pad);
+  p.appendChild(el('p',{class:'privacy',text:'연습용 화면이에요. 비밀번호는 저장되거나 어디로도 보내지지 않습니다.'}));
+  w.appendChild(p);
+  const g=el('div',{class:'grid one'}); w.appendChild(g);
+  const okb=document.createElement('button');
+  okb.className='choice go'; okb.type='button'; okb.dataset.scan='1';
+  okb.innerHTML='<span>확인</span>';
+  okb.addEventListener('click',()=>{ beep(); say('확인');
+    setTimeout(()=>goto('menu'),S.speak?220:70); });
+  g.appendChild(okb);
+  paint();
+}
+
+/* ---- 2. 거래 선택 ---- */
+function scrMenu(st){
+  const w=el('div',{class:'sheetwrap'}); st.appendChild(w);
+  head('어떤 거래를 하시겠어요?',null,w);
+  const g=el('div',{class:'grid'}); w.appendChild(g);
+  g.appendChild(choice({label:'출금',act:()=>{txn='출금'; goto('amount');}}));
+  g.appendChild(choice({label:'잔액 조회',act:()=>{txn='조회'; goto('confirm');}}));
+  if(S.level==='real'){
+    g.appendChild(choice({label:'계좌 이체',disabled:true,tag:'다음에 배워요'}));
+    g.appendChild(choice({label:'통장 정리',disabled:true,tag:'다음에 배워요'}));
+  }
+}
+
+/* ---- 3. 금액 선택 (출금) ---- */
+function scrAmount(st){
+  const w=el('div',{class:'sheetwrap'}); st.appendChild(w);
+  head('얼마를 찾으시겠어요?',null,w);
+  const g=el('div',{class:'grid'}); w.appendChild(g);
+  const presets = S.level==='easy' ? [50000] : PRESET;
+  presets.forEach(v=>{
+    g.appendChild(choice({label:won(v),act:()=>{amount=v; goto('confirm');}}));
+  });
+  if(S.level==='real'){
+    g.appendChild(choice({label:'직접 입력',act:()=>goto('typeamount')}));
+  }
+}
+function scrTypeAmount(st){
+  const w=el('div',{class:'sheetwrap'}); st.appendChild(w);
+  head('찾을 금액을 눌러 주세요','만원 단위로 눌러요',w);
+  const p=el('div',{class:'panel'});
+  const disp=el('div',{class:'num',text:'0원'}); p.appendChild(disp);
+  let v=0;
+  const pad=el('div',{class:'pad'});
+  ['1만','5만','10만','30만','지움','←'].forEach(k=>{
+    const b=el('button',{class:'sm','data-scan':'1',text:k});
+    b.addEventListener('click',()=>{ beep(780);
+      if(k==='지움') v=0;
+      else if(k==='←') v=Math.max(0,v-10000);
+      else v+=Number(k.replace('만',''))*10000;
+      disp.textContent=won(v);
+      okb.disabled=v<=0; okb.style.opacity=okb.disabled?'.4':'1';
+    });
+    pad.appendChild(b);
+  });
+  p.appendChild(pad); w.appendChild(p);
+  const g=el('div',{class:'grid one'}); w.appendChild(g);
+  const okb=document.createElement('button');
+  okb.className='choice go'; okb.type='button'; okb.dataset.scan='1'; okb.disabled=true; okb.style.opacity='.4';
+  okb.innerHTML='<span>다음</span>';
+  okb.addEventListener('click',()=>{ if(v<=0) return; beep(); amount=v; goto('confirm'); });
+  g.appendChild(okb);
+}
+
+/* ---- 4. 확인 ---- */
+function scrConfirm(st){
+  const w=el('div',{class:'sheetwrap'}); st.appendChild(w);
+  if(txn==='조회'){
+    head('잔액을 확인할까요?',null,w);
+    const p=el('div',{class:'panel'});
+    p.innerHTML='<p class="big">'+won(BALANCE)+'</p><p>현재 통장 잔액이에요</p>';
+    w.appendChild(p);
+    const g=el('div',{class:'grid one'}); w.appendChild(g);
+    g.appendChild(choice({label:'확인했어요',cls:'go',act:()=>goto('receipt')}));
+    return;
+  }
+  head('이대로 출금할까요?','낼 돈이 아니라 "찾을 돈"이에요',w);
+  const p=el('div',{class:'panel'});
+  p.innerHTML='<p class="big">'+won(amount)+'</p><p>출금 후 잔액 '+won(Math.max(0,BALANCE-amount))+'</p>';
+  w.appendChild(p);
+  const g=el('div',{class:'grid'}); w.appendChild(g);
+  g.appendChild(choice({label:'다시 고르기',act:()=>back()}));
+  g.appendChild(choice({label:'출금하기',cls:'go',act:()=>goto('processing')}));
+}
+
+/* ---- 5. 처리 중 ---- */
+function scrProcessing(st){
+  const w=el('div',{class:'sheetwrap'}); st.appendChild(w);
+  head('거래하는 중이에요','카드를 빼지 마세요',w);
+  const p=el('div',{class:'panel'});
+  p.innerHTML='<div class="spin"></div><p class="big">잠시만 기다려요</p>';
+  w.appendChild(p);
+  setTimeout(()=>{ beep(1180); goto('takecard'); },1800);
+}
+
+/* ---- 6. 카드 먼저 가져가기 ---- */
+function scrTakeCard(st){
+  const w=el('div',{class:'sheetwrap'}); st.appendChild(w);
+  head('카드를 먼저 가져가세요','카드를 두고 가지 않도록 가장 먼저 챙겨요',w);
+  const p=el('div',{class:'panel'});
+  p.innerHTML='<div class="slot out" id="slot2"><span>카드가 나왔어요</span><div class="card"></div></div>';
+  w.appendChild(p);
+  const g=el('div',{class:'grid one'}); w.appendChild(g);
+  g.appendChild(choice({label:'카드 가져가기',cls:'go',act:()=>{
+    goto(txn==='출금' ? 'takecash' : 'receipt');
+  }}));
+}
+
+/* ---- 7. 현금 가져가기 (출금만) ---- */
+function scrTakeCash(st){
+  const w=el('div',{class:'sheetwrap'}); st.appendChild(w);
+  head('현금을 가져가세요',null,w);
+  const p=el('div',{class:'panel'});
+  p.innerHTML='<p class="big">'+won(amount)+'</p><p>나온 돈을 세어 보고 챙겨요</p>';
+  w.appendChild(p);
+  const g=el('div',{class:'grid one'}); w.appendChild(g);
+  g.appendChild(choice({label:'현금 가져가기',cls:'go',act:()=>goto('receipt')}));
+}
+
+/* ---- 8. 영수증 ---- */
+function scrReceipt(st){
+  const w=el('div',{class:'sheetwrap'}); st.appendChild(w);
+  head('영수증을 받으시겠어요?',null,w);
+  const g=el('div',{class:'grid'}); w.appendChild(g);
+  g.appendChild(choice({label:'영수증 받기',cls:'go',act:()=>{wantReceipt=true; goto('done');}}));
+  g.appendChild(choice({label:'괜찮아요',act:()=>{wantReceipt=false; goto('done');}}));
+}
+
+/* ---- 9. 완료 ---- */
+function scrDone(st){
+  const w=el('div',{class:'sheetwrap'}); st.appendChild(w);
+  const p=el('div',{class:'panel'});
+  p.innerHTML='<p class="big">거래가 끝났어요</p><p>이용해 주셔서 감사합니다</p>';
+  w.appendChild(p);
+  say('거래가 끝났어요. 이용해 주셔서 감사합니다');
+
+  if(wantReceipt){
+    const d=new Date();
+    const pad=n=>String(n).padStart(2,'0');
+    const when=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
+    const r=el('div',{class:'receipt'});
+    r.innerHTML='<div class="ttl">튼튼은행 ATM</div>'+
+      '<div class="r"><span>거래종류</span><span>'+txn+'</span></div>'+
+      '<div class="r"><span>거래일시</span><span>'+when+'</span></div>'+
+      '<div class="ln"></div>'+
+      (txn==='출금'?'<div class="r tot"><span>출금 금액</span><span>'+amount.toLocaleString('ko-KR')+'</span></div>':
+        '<div class="r tot"><span>현재 잔액</span><span>'+BALANCE.toLocaleString('ko-KR')+'</span></div>')+
+      (txn==='출금'?'<div class="r"><span>거래 후 잔액</span><span>'+Math.max(0,BALANCE-amount).toLocaleString('ko-KR')+'</span></div>':'')+
+      '<div class="ln"></div><div style="text-align:center">안전하게 보관하세요</div>';
+    w.appendChild(r);
+  }
+
+  const g=el('div',{class:'grid'}); w.appendChild(g);
+  g.appendChild(choice({label:'다시 거래하기',cls:'go',act:()=>{S.done++; reset();}}));
+  g.appendChild(choice({label:'목록으로',act:()=>{ location.href='index.html'; }}));
+}
+
+/* 라우팅 테이블에 직접입력 화면 추가 */
+const _routes={start:scrStart,pin:scrPin,menu:scrMenu,amount:scrAmount,typeamount:scrTypeAmount,
+  confirm:scrConfirm,processing:scrProcessing,takecard:scrTakeCard,takecash:scrTakeCash,
+  receipt:scrReceipt,done:scrDone};
+function render(){
+  stopScan();
+  document.documentElement.style.setProperty('--sc',S.big?'1.22':'1');
+  const st=document.getElementById('stage'); st.innerHTML='';
+  document.getElementById('backBtn').disabled=!hist.length;
+  document.getElementById('homeBtn').disabled=(view==='start');
+  _routes[view](st);
+  startScan();
+}
+
+/* ================= 스캔 모드 ================= */
+function stopScan(){ if(scanTimer){clearInterval(scanTimer); scanTimer=null;}
+  scanItems.forEach(b=>b.classList.remove('scan')); scanItems=[]; }
+function startScan(){
+  if(!S.scan) return;
+  const root=document.getElementById('stage');
+  scanItems=Array.from(root.querySelectorAll('[data-scan]')).filter(b=>!b.disabled);
+  if(!scanItems.length) return;
+  scanAt=0; mark();
+  if(scanTimer) clearInterval(scanTimer);
+  scanTimer=setInterval(()=>{scanAt=(scanAt+1)%scanItems.length; mark();},S.scan*1000);
+}
+function mark(){ scanItems.forEach((b,i)=>b.classList.toggle('scan',i===scanAt)); }
+function choose(){ if(scanItems[scanAt]) scanItems[scanAt].click(); }
+
+/* ================= 설정 ================= */
+const sheet=document.getElementById('sheet');
+function paintSet(){
+  document.querySelectorAll('.seg').forEach(seg=>{
+    const k=seg.dataset.set;
+    seg.querySelectorAll('button').forEach(b=>
+      b.setAttribute('aria-pressed',String(S[k])===b.dataset.v?'true':'false'));
+  });
+  document.getElementById('tally').textContent='이번 시간에 끝낸 거래 '+S.done+'번';
+}
+document.querySelectorAll('.seg').forEach(seg=>{
+  seg.addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    const k=seg.dataset.set;
+    S[k]=(k==='level')?b.dataset.v:Number(b.dataset.v);
+    paintSet(); reset();
+  });
+});
+document.getElementById('closeSet').addEventListener('click',()=>{sheet.hidden=true; startScan();});
+sheet.addEventListener('click',e=>{ if(e.target===sheet){sheet.hidden=true; startScan();} });
+(function(){
+  const g=document.getElementById('gear'), fill=document.getElementById('gfill');
+  let t=null,a=null,p=0;
+  const start=e=>{ e.preventDefault(); p=0;
+    a=setInterval(()=>{p+=4; fill.style.height=Math.min(100,p)+'%';},40);
+    t=setTimeout(()=>{end(); sheet.hidden=false; stopScan(); paintSet();},1000); };
+  const end=()=>{clearTimeout(t); clearInterval(a); fill.style.height='0';};
+  ['mousedown','touchstart'].forEach(ev=>g.addEventListener(ev,start,{passive:false}));
+  ['mouseup','mouseleave','touchend','touchcancel'].forEach(ev=>g.addEventListener(ev,end));
+})();
+
+document.getElementById('backBtn').addEventListener('click',()=>{beep(520); back();});
+document.getElementById('homeBtn').addEventListener('click',()=>{beep(440); reset();});
+document.addEventListener('keydown',e=>{
+  if(!sheet.hidden) return;
+  if(S.scan&&(e.code==='Space'||e.code==='Enter')){e.preventDefault(); choose();}
+});
+
+render();
+</script>
+</body>
+</html>
