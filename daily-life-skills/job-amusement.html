@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#7A3FA0">
+<title>즐거운랜드 알바 체험</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="job-common.css">
+<style>
+:root{
+  --bg:#F7EEF9; --surface:#FFFFFF; --surface-2:#FBF3FC; --surface-3:#F0E0F3;
+  --fg:#241827; --muted:#6B5C70; --line:#E3CFE8;
+  --brand:#7A3FA0; --brand-soft:#ECDBF2; --accent:#FF5C8A; --accent-ink:#FFFFFF;
+  --warn:#B4541F;
+  --font-d:"Gothic A1","Noto Sans KR",system-ui,sans-serif;
+  --font-b:"Noto Sans KR","Gothic A1",system-ui,sans-serif;
+  --sc:1;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#17121A; --surface:#211A25; --surface-2:#29212E; --surface-3:#342A3A;
+  --fg:#F1E8F3; --muted:#B9A6BE; --line:#453A4C;
+  --brand:#C48AE0; --brand-soft:#3A2A43; --accent:#FF86A8; --accent-ink:#241109;
+  --warn:#FF9A6B; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#17121A; --surface:#211A25; --surface-2:#29212E; --surface-3:#342A3A;
+  --fg:#F1E8F3; --muted:#B9A6BE; --line:#453A4C;
+  --brand:#C48AE0; --brand-soft:#3A2A43; --accent:#FF86A8; --accent-ink:#241109;
+  --warn:#FF9A6B; color-scheme:dark;
+}
+</style>
+</head>
+<body>
+<div class="kiosk">
+  <div class="bar">
+    <a class="ghost" href="index.html" aria-label="일상생활기술 연습 목록으로 돌아가기" title="목록으로">🏠 목록으로</a>
+    <div class="brand">즐거운랜드</div>
+    <div class="sp"></div>
+    <button class="ghost" id="backBtn">← 뒤로</button>
+    <button class="ghost" id="homeBtn">처음부터</button>
+    <button class="gear" id="gear" aria-label="선생님 설정 — 1초 길게 누르세요">
+      <span class="fill" id="gfill"></span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>
+    </button>
+  </div>
+  <div class="stage" id="stage"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="box">
+    <h2>선생님 설정</h2>
+    <p class="lead">학생에 따라 단계를 줄이세요. 바꾸면 처음부터 다시 시작합니다.</p>
+    <div class="opt"><span class="t">난이도
+      <small>실제처럼 = 손님 3명 모두 응대 (키 제한 판단 포함)</small></span>
+      <div class="seg" data-set="level">
+        <button data-v="real">실제처럼</button><button data-v="mid">조금 쉽게</button><button data-v="easy">아주 쉽게</button>
+      </div>
+    </div>
+    <div class="opt"><span class="t">글자·버튼 크기</span>
+      <div class="seg" data-set="big">
+        <button data-v="0">보통</button><button data-v="1">크게</button>
+      </div>
+    </div>
+    <div class="opt"><span class="t">소리로 읽어 주기 <small>질문과 안내를 말해 줍니다</small></span>
+      <div class="seg" data-set="speak">
+        <button data-v="1">켜기</button><button data-v="0">끄기</button>
+      </div>
+    </div>
+    <div class="opt"><span class="t">스캔 모드
+      <small>칸이 하나씩 켜집니다. 스위치·스페이스바로 선택. '아주 쉽게'와 함께 쓰세요</small></span>
+      <div class="seg" data-set="scan">
+        <button data-v="0">끄기</button><button data-v="3">3초</button><button data-v="5">5초</button><button data-v="8">8초</button>
+      </div>
+    </div>
+    <div class="tally" id="tally"></div>
+    <button class="btn go" id="closeSet">닫기</button>
+  </div>
+</div>
+
+<script src="job-common.js"></script>
+<script>
+/* ================= 손님 데이터 ================= */
+const GUESTS_REAL=[{name:'민지',height:135},{name:'하은',height:108},{name:'준호',height:150}];
+const GUESTS_MID =[{name:'민지',height:135},{name:'하은',height:108}];
+const GUESTS_EASY=[{name:'민지',height:140}];
+const LIMIT=120;
+const PAY_PER_GUEST=2000;
+
+function guests(){ return S.level==='easy'?GUESTS_EASY:(S.level==='mid'?GUESTS_MID:GUESTS_REAL); }
+
+/* ================= 상태 ================= */
+const S={level:'real',big:0,speak:1,scan:0,done:0};
+let view='start', hist=[], gi=0, barLocked=false, ridePhase='go';
+
+const {say,choice,head}=makeUI(S);
+const scan=makeScan(S,'stage');
+
+/* ================= 그림 ================= */
+const I={
+ ticket:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"><path d="M12 30h76v14a8 8 0 0 0 0 12v14H12V56a8 8 0 0 0 0-12z"/><path d="M50 34v6M50 48v6M50 62v6"/></svg>',
+ ruler:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"><rect x="30" y="10" width="40" height="80" rx="6"/><path d="M30 25h10M30 40h14M30 55h10M30 70h14"/></svg>',
+ ok:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 52l18 18 38-42"/></svg>',
+ no:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"><circle cx="50" cy="50" r="32"/><path d="M28 72L72 28"/></svg>',
+ bar:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"><path d="M16 34h68M16 34v8a8 8 0 0 0 8 8h52a8 8 0 0 0 8-8v-8"/><path d="M30 58v20M70 58v20"/></svg>',
+ play:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round"><circle cx="50" cy="50" r="34"/><path d="M42 36l24 14-24 14z" fill="currentColor"/></svg>',
+ wave:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M30 60c0-28 10-42 10-42s4 6 4 16-4 12-4 12 8-2 8 8-6 10-6 10"/><circle cx="50" cy="30" r="10"/><path d="M30 90c6-14 14-20 24-20s20 6 24 18"/></svg>',
+ coin:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"><circle cx="50" cy="50" r="38"/><path d="M50 30v40M40 38h14a7 7 0 0 1 0 14H40h16a7 7 0 0 1 0 14H38"/></svg>'
+};
+
+/* ================= 이동 ================= */
+function goto(v,push){ if(push!==false) hist.push(view); view=v; render(); }
+function back(){ if(hist.length){ view=hist.pop(); render(); } }
+function reset(){ view='start'; hist=[]; gi=0; barLocked=false; ridePhase='go'; render(); }
+
+function render(){
+  scan.stopScan();
+  document.documentElement.style.setProperty('--sc',S.big?'1.22':'1');
+  const st=document.getElementById('stage'); st.innerHTML='';
+  document.getElementById('backBtn').disabled=!hist.length;
+  document.getElementById('homeBtn').disabled=(view==='start');
+  ({start:scrStart,ticket:scrTicket,height:scrHeight,bar:scrBar,ride:scrRide,done:scrDone})[view](st);
+  scan.startScan();
+}
+
+/* ---- 0. 출근 ---- */
+function scrStart(st){
+  sWelcome();
+  const w=el('div','sheetwrap'); st.appendChild(w);
+  head('즐거운랜드에 오신 걸 환영해요','회전목마 앞에서 알바를 시작해요',w);
+  const g=el('div','grid one'); w.appendChild(g);
+  g.appendChild(choice({label:'출근하기',pic:I.play,cls:'go',sound:sConfirm,
+    act:()=>{ gi=0; goto('ticket'); }}));
+}
+
+/* ---- 1. 입장권 확인 ---- */
+function scrTicket(st){
+  const guest=guests()[gi];
+  const w=el('div','sheetwrap'); st.appendChild(w);
+  head(guest.name+' 손님이 입장권을 보여줘요','입장권을 확인해 주세요',w);
+  const g=el('div','grid one'); w.appendChild(g);
+  g.appendChild(choice({label:'입장권 확인하기',pic:I.ticket,cls:'go',sound:sScan,
+    act:()=>goto('height')}));
+}
+
+/* ---- 2. 키 확인 (안전) ---- */
+function scrHeight(st){
+  const guest=guests()[gi];
+  const w=el('div','sheetwrap'); st.appendChild(w);
+  head('키를 확인해요','이 놀이기구는 '+LIMIT+'cm 이상만 탈 수 있어요',w);
+  const p=el('div','panel');
+  p.innerHTML='<span class="pic" style="width:50px;height:50px;display:inline-block;color:var(--brand)">'+I.ruler+'</span>'+
+    '<div class="num">'+guest.height+'cm</div><p>'+guest.name+' 손님의 키예요</p>';
+  w.appendChild(p);
+  const g=el('div','grid'); w.appendChild(g);
+  const ok=guest.height>=LIMIT;
+  g.appendChild(choice({label:'태워도 돼요',pic:I.ok,
+    act:()=>{
+      if(ok){ sConfirm(); toast('맞아요! '+LIMIT+'cm보다 커요'); goto('bar'); }
+      else { sError(); toast('다시 한 번 키를 비교해 볼까요?'); }
+    }}));
+  g.appendChild(choice({label:'아직은 안 돼요',pic:I.no,
+    act:()=>{
+      if(!ok){ sConfirm(); toast('맞아요, 안전을 위해 다음에 타요'); gi++; (gi<guests().length)?goto('ticket'):goto('done'); }
+      else { sError(); toast('다시 한 번 키를 비교해 볼까요?'); }
+    }}));
+}
+
+/* ---- 3. 안전바 ---- */
+function scrBar(st){
+  const w=el('div','sheetwrap'); st.appendChild(w);
+  head('안전바를 내려주세요','안전바가 잠겨야만 출발할 수 있어요',w);
+  const p=el('div','panel');
+  p.innerHTML='<span class="pic" style="width:50px;height:50px;display:inline-block;color:var(--brand)">'+I.bar+'</span>'+
+    '<p>손님이 자리에 앉았어요</p>';
+  w.appendChild(p);
+  const g=el('div','grid one'); w.appendChild(g);
+  g.appendChild(choice({label:'안전바 내리기',pic:I.bar,cls:'go',sound:sConfirm,
+    act:()=>{ barLocked=true; ridePhase='go'; goto('ride'); }}));
+}
+
+/* ---- 4. 출발 → 운행 → 안전바 올리기 → 인사 ---- */
+function scrRide(st){
+  const w=el('div','sheetwrap'); st.appendChild(w);
+  if(ridePhase==='go'){
+    head('안전바가 잠겼어요. 이제 출발해요!',null,w);
+    const g=el('div','grid one'); w.appendChild(g);
+    g.appendChild(choice({label:'출발!',pic:I.play,cls:'go',sound:sConfirm,
+      act:()=>{
+        ridePhase='running'; render();
+        setTimeout(()=>{ ridePhase='back'; render(); },1600);
+      }}));
+  } else if(ridePhase==='running'){
+    const p=el('div','panel');
+    p.innerHTML='<div class="spin"></div><p class="big">신나게 타는 중이에요</p><p>즐거운 회전목마!</p>';
+    w.appendChild(p);
+  } else if(ridePhase==='back'){
+    head('도착했어요','안전바를 올려주세요',w);
+    const g=el('div','grid one'); w.appendChild(g);
+    g.appendChild(choice({label:'안전바 올리기',pic:I.bar,act:()=>{
+      barLocked=false; ridePhase='bye'; render();
+    }}));
+  } else {
+    head('안녕히 가세요!',null,w);
+    const g=el('div','grid one'); w.appendChild(g);
+    g.appendChild(choice({label:'인사하기',pic:I.wave,cls:'go',sound:sConfirm,
+      act:()=>{ gi++; (gi<guests().length)?goto('ticket'):goto('done'); }}));
+  }
+}
+
+/* ---- 5. 퇴근 ---- */
+function scrDone(st){
+  sCheer();
+  const w=el('div','sheetwrap'); st.appendChild(w);
+  const pay=guests().length*PAY_PER_GUEST;
+  const p=el('div','panel');
+  p.innerHTML='<p class="big">오늘 알바가 끝났어요!</p>'+
+    '<span class="pic" style="width:50px;height:50px;display:inline-block;color:var(--accent)">'+I.coin+'</span>'+
+    '<div class="pay">오늘 번 돈 '+pay.toLocaleString('ko-KR')+'원</div>'+
+    '<p>손님 '+guests().length+'명을 안전하게 태워 드렸어요</p>';
+  w.appendChild(p);
+  say('오늘 알바가 끝났어요. 수고하셨어요!');
+  const g=el('div','grid'); w.appendChild(g);
+  g.appendChild(choice({label:'다시 출근하기',pic:I.play,cls:'go',
+    act:()=>{ S.done++; reset(); }}));
+  g.appendChild(choice({label:'목록으로',pic:I.no,
+    act:()=>{ location.href='index.html'; }}));
+}
+
+wireSettingsSheet(S, reset, { scan, tallyLabel:'이번 시간에 끝낸 근무' });
+wireNav(S, back, reset, scan);
+render();
+</script>
+</body>
+</html>

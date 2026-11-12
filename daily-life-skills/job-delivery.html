@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1E4D8C">
+<title>빠른배송 물류센터 체험</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="job-common.css">
+<style>
+:root{
+  --bg:#EAF0F7; --surface:#FFFFFF; --surface-2:#F3F7FB; --surface-3:#E2EAF3;
+  --fg:#17212E; --muted:#596679; --line:#D2DCE8;
+  --brand:#1E4D8C; --brand-soft:#DCE7F6; --accent:#F0A33B; --accent-ink:#1A1109;
+  --warn:#B4541F;
+  --font-d:"Gothic A1","Noto Sans KR",system-ui,sans-serif;
+  --font-b:"Noto Sans KR","Gothic A1",system-ui,sans-serif;
+  --sc:1;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0F141B; --surface:#182029; --surface-2:#1F2833; --surface-3:#293442;
+  --fg:#E7EDF4; --muted:#9FADBF; --line:#324053;
+  --brand:#7DAEF0; --brand-soft:#1E3550; --accent:#F6BF63; --accent-ink:#1A1109;
+  --warn:#FF9A6B; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0F141B; --surface:#182029; --surface-2:#1F2833; --surface-3:#293442;
+  --fg:#E7EDF4; --muted:#9FADBF; --line:#324053;
+  --brand:#7DAEF0; --brand-soft:#1E3550; --accent:#F6BF63; --accent-ink:#1A1109;
+  --warn:#FF9A6B; color-scheme:dark;
+}
+.box-stack{display:flex;flex-direction:column;align-items:center;gap:10px}
+.parcel{background:var(--surface);border:3px solid var(--line);border-radius:16px;
+  padding:18px 22px;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:200px}
+.parcel .region{font-family:var(--font-d);font-weight:900;color:var(--brand);
+  font-size:calc(22px*var(--sc))}
+.bins{display:grid;gap:10px;grid-template-columns:repeat(2,1fr)}
+@media (min-width:560px){.bins{grid-template-columns:repeat(4,1fr)}}
+.bin{background:var(--surface);border:3px solid var(--line);border-radius:14px;
+  padding:16px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;
+  font-family:var(--font-d);font-weight:700;font-size:calc(15px*var(--sc))}
+.bin .cnt{font-size:calc(12.5px*var(--sc));color:var(--muted);font-weight:500}
+</style>
+</head>
+<body>
+<div class="kiosk">
+  <div class="bar">
+    <a class="ghost" href="index.html" aria-label="일상생활기술 연습 목록으로 돌아가기" title="목록으로">🏠 목록으로</a>
+    <div class="brand">빠른배송 물류센터</div>
+    <div class="sp"></div>
+    <button class="ghost" id="backBtn">← 뒤로</button>
+    <button class="ghost" id="homeBtn">처음부터</button>
+    <button class="gear" id="gear" aria-label="선생님 설정 — 1초 길게 누르세요">
+      <span class="fill" id="gfill"></span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>
+    </button>
+  </div>
+  <div class="stage" id="stage"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="box">
+    <h2>선생님 설정</h2>
+    <p class="lead">학생에 따라 단계를 줄이세요. 바꾸면 처음부터 다시 시작합니다.</p>
+    <div class="opt"><span class="t">난이도
+      <small>실제처럼 = 택배 8개를 4개 지역으로 분류</small></span>
+      <div class="seg" data-set="level">
+        <button data-v="real">실제처럼</button><button data-v="mid">조금 쉽게</button><button data-v="easy">아주 쉽게</button>
+      </div>
+    </div>
+    <div class="opt"><span class="t">글자·버튼 크기</span>
+      <div class="seg" data-set="big">
+        <button data-v="0">보통</button><button data-v="1">크게</button>
+      </div>
+    </div>
+    <div class="opt"><span class="t">소리로 읽어 주기 <small>질문과 안내를 말해 줍니다</small></span>
+      <div class="seg" data-set="speak">
+        <button data-v="1">켜기</button><button data-v="0">끄기</button>
+      </div>
+    </div>
+    <div class="opt"><span class="t">스캔 모드
+      <small>칸이 하나씩 켜집니다. 스위치·스페이스바로 선택. '아주 쉽게'와 함께 쓰세요</small></span>
+      <div class="seg" data-set="scan">
+        <button data-v="0">끄기</button><button data-v="3">3초</button><button data-v="5">5초</button><button data-v="8">8초</button>
+      </div>
+    </div>
+    <div class="tally" id="tally"></div>
+    <button class="btn go" id="closeSet">닫기</button>
+  </div>
+</div>
+
+<script src="job-common.js"></script>
+<script>
+/* ================= 데이터 ================= */
+const REGIONS=['서울','경기','부산','대구'];
+function regions(){ return S.level==='easy' ? REGIONS.slice(0,2) : REGIONS; }
+
+function makeParcels(n,regs){
+  const arr=[];
+  for(let i=0;i<n;i++) arr.push({ no: 1001+i, region: regs[i%regs.length] });
+  // 지역이 뒤섞여 보이도록 순서를 조금 섞어요
+  for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+  return arr;
+}
+function parcelCount(){ return S.level==='easy'?4:(S.level==='mid'?6:8); }
+
+const PAY_PER_PARCEL=700;
+
+/* ================= 상태 ================= */
+const S={level:'real',big:0,speak:1,scan:0,done:0};
+let view='start', hist=[], parcels=[], pi=0, sortedCount=0, wrong=0;
+
+const {say,choice,head}=makeUI(S);
+const scan=makeScan(S,'stage');
+
+/* ================= 그림 ================= */
+const I={
+ box:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"><path d="M50 16l36 20v32L50 88 14 68V36z"/><path d="M14 36l36 20 36-20M50 56v32"/></svg>',
+ play:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round"><circle cx="50" cy="50" r="34"/><path d="M42 36l24 14-24 14z" fill="currentColor"/></svg>',
+ none:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"><circle cx="50" cy="50" r="32"/><path d="M28 72L72 28"/></svg>',
+ coin:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"><circle cx="50" cy="50" r="38"/><path d="M50 30v40M40 38h14a7 7 0 0 1 0 14H40h16a7 7 0 0 1 0 14H38"/></svg>'
+};
+
+/* ================= 이동 ================= */
+function goto(v,push){ if(push!==false) hist.push(view); view=v; render(); }
+function back(){ if(hist.length){ view=hist.pop(); render(); } }
+function reset(){ view='start'; hist=[]; parcels=[]; pi=0; sortedCount=0; wrong=0; render(); }
+
+function render(){
+  scan.stopScan();
+  document.documentElement.style.setProperty('--sc',S.big?'1.22':'1');
+  const st=document.getElementById('stage'); st.innerHTML='';
+  document.getElementById('backBtn').disabled=!hist.length;
+  document.getElementById('homeBtn').disabled=(view==='start');
+  ({start:scrStart,sort:scrSort,done:scrDone})[view](st);
+  scan.startScan();
+}
+
+/* ---- 0. 출근 ---- */
+function scrStart(st){
+  sWelcome();
+  const w=el('div','sheetwrap'); st.appendChild(w);
+  head('빠른배송 물류센터에 오신 걸 환영해요','택배 상자를 지역별로 분류해요',w);
+  const g=el('div','grid one'); w.appendChild(g);
+  g.appendChild(choice({label:'출근하기',pic:I.play,cls:'go',sound:sConfirm,
+    act:()=>{ parcels=makeParcels(parcelCount(),regions()); pi=0; sortedCount=0; wrong=0; goto('sort'); }}));
+}
+
+/* ---- 1. 분류 작업 ---- */
+function scrSort(st){
+  const w=el('div','sheetwrap'); st.appendChild(w);
+  if(pi>=parcels.length){ goto('done'); return; }
+  const p=parcels[pi];
+  head('이 택배는 어느 지역으로 가야 할까요?','상자에 적힌 지역을 보고 맞는 칸에 넣어요',w);
+
+  const stack=el('div','box-stack'); w.appendChild(stack);
+  const box=el('div','parcel');
+  box.innerHTML='<span class="pic" style="width:44px;height:44px;display:inline-block;color:var(--brand)">'+I.box+'</span>'+
+    '<div class="region">'+p.region+'</div><div style="color:var(--muted);font-size:13px">송장번호 '+p.no+'</div>';
+  stack.appendChild(box);
+  stack.appendChild(el('div','hint','분류한 택배 '+sortedCount+' / '+parcels.length));
+
+  const bins=el('div','bins'); w.appendChild(bins);
+  regions().forEach(r=>{
+    const b=el('button','bin'); b.type='button'; b.dataset.scan='1';
+    b.innerHTML='<span>'+r+'</span><span class="cnt">분류함</span>';
+    b.addEventListener('click',()=>{
+      if(r===p.region){ sScan(); sortedCount++; pi++; render(); }
+      else { sError(); wrong++; toast('상자에 적힌 지역을 다시 확인해 보세요'); }
+    });
+    bins.appendChild(b);
+  });
+}
+
+/* ---- 2. 퇴근 ---- */
+function scrDone(st){
+  sCheer();
+  const w=el('div','sheetwrap'); st.appendChild(w);
+  const pay=parcels.length*PAY_PER_PARCEL;
+  const p=el('div','panel');
+  p.innerHTML='<p class="big">오늘 분류 작업이 끝났어요!</p>'+
+    '<span class="pic" style="width:50px;height:50px;display:inline-block;color:var(--accent)">'+I.coin+'</span>'+
+    '<div class="pay">오늘 번 돈 '+pay.toLocaleString('ko-KR')+'원</div>'+
+    '<p>택배 '+parcels.length+'개를 지역별로 분류했어요</p>';
+  w.appendChild(p);
+  say('오늘 분류 작업이 끝났어요. 수고하셨어요!');
+  const g=el('div','grid'); w.appendChild(g);
+  g.appendChild(choice({label:'다시 출근하기',pic:I.play,cls:'go',
+    act:()=>{ S.done++; reset(); }}));
+  g.appendChild(choice({label:'목록으로',pic:I.none,
+    act:()=>{ location.href='index.html'; }}));
+}
+
+wireSettingsSheet(S, reset, { scan, tallyLabel:'이번 시간에 끝낸 근무' });
+wireNav(S, back, reset, scan);
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#2E5C4F">
+<title>꿈결 도서관 사서보조 체험</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="job-common.css">
+<style>
+:root{
+  --bg:#EFF3EC; --surface:#FFFFFF; --surface-2:#F6F8F4; --surface-3:#E7ECE3;
+  --fg:#1C241F; --muted:#5B655D; --line:#D6DED2;
+  --brand:#2E5C4F; --brand-soft:#DCEAE3; --accent:#D98E3B; --accent-ink:#FFFFFF;
+  --warn:#B4541F;
+  --font-d:"Gothic A1","Noto Sans KR",system-ui,sans-serif;
+  --font-b:"Noto Sans KR","Gothic A1",system-ui,sans-serif;
+  --sc:1;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121713; --surface:#1B211C; --surface-2:#222922; --surface-3:#2C342C;
+  --fg:#E9EFE8; --muted:#A3AFA2; --line:#36402F;
+  --brand:#6FBFA2; --brand-soft:#1E3A30; --accent:#F0A94E; --accent-ink:#1A1109;
+  --warn:#FF9A6B; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#121713; --surface:#1B211C; --surface-2:#222922; --surface-3:#2C342C;
+  --fg:#E9EFE8; --muted:#A3AFA2; --line:#36402F;
+  --brand:#6FBFA2; --brand-soft:#1E3A30; --accent:#F0A94E; --accent-ink:#1A1109;
+  --warn:#FF9A6B; color-scheme:dark;
+}
+.shelf{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(calc(130px*var(--sc)),1fr))}
+.book{background:var(--surface);border:3px solid var(--line);border-radius:14px;padding:14px 10px;
+  display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;
+  font-family:var(--font-d);font-weight:700;font-size:calc(14px*var(--sc));transition:transform .07s,opacity .2s}
+.book:active{transform:scale(.96)}
+.book .cn{font-family:ui-monospace,monospace;font-weight:900;color:var(--brand);font-size:calc(18px*var(--sc))}
+.book.placed{opacity:.35;pointer-events:none;border-color:var(--brand)}
+</style>
+</head>
+<body>
+<div class="kiosk">
+  <div class="bar">
+    <a class="ghost" href="index.html" aria-label="일상생활기술 연습 목록으로 돌아가기" title="목록으로">🏠 목록으로</a>
+    <div class="brand">꿈결 도서관</div>
+    <div class="sp"></div>
+    <button class="ghost" id="backBtn">← 뒤로</button>
+    <button class="ghost" id="homeBtn">처음부터</button>
+    <button class="gear" id="gear" aria-label="선생님 설정 — 1초 길게 누르세요">
+      <span class="fill" id="gfill"></span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>
+    </button>
+  </div>
+  <div class="stage" id="stage"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="box">
+    <h2>선생님 설정</h2>
+    <p class="lead">학생에 따라 단계를 줄이세요. 바꾸면 처음부터 다시 시작합니다.</p>
+    <div class="opt"><span class="t">난이도
+      <small>실제처럼 = 대출 2명 · 책 정리 4권 · 안내 질문까지</small></span>
+      <div class="seg" data-set="level">
+        <button data-v="real">실제처럼</button><button data-v="mid">조금 쉽게</button><button data-v="easy">아주 쉽게</button>
+      </div>
+    </div>
+    <div class="opt"><span class="t">글자·버튼 크기</span>
+      <div class="seg" data-set="big">
+        <button data-v="0">보통</button><button data-v="1">크게</button>
+      </div>
+    </div>
+    <div class="opt"><span class="t">소리로 읽어 주기 <small>질문과 안내를 말해 줍니다</small></span>
+      <div class="seg" data-set="speak">
+        <button data-v="1">켜기</button><button data-v="0">끄기</button>
+      </div>
+    </div>
+    <div class="opt"><span class="t">스캔 모드
+      <small>칸이 하나씩 켜집니다. 스위치·스페이스바로 선택. '아주 쉽게'와 함께 쓰세요</small></span>
+      <div class="seg" data-set="scan">
+        <button data-v="0">끄기</button><button data-v="3">3초</button><button data-v="5">5초</button><button data-v="8">8초</button>
+      </div>
+    </div>
+    <div class="tally" id="tally"></div>
+    <button class="btn go" id="closeSet">닫기</button>
+  </div>
+</div>
+
+<script src="job-common.js"></script>
+<script>
+/* ================= 데이터 ================= */
+const BORROW_REAL=['민지','하은'];
+const BORROW_EASY=['민지'];
+function borrowers(){ return S.level==='easy'?BORROW_EASY:BORROW_REAL; }
+
+const SHELF_REAL=[{t:'내 친구 로봇',n:88},{t:'소방차 출동',n:102},{t:'공룡 탐험',n:215},{t:'바다 이야기',n:340}];
+const SHELF_MID =[{t:'내 친구 로봇',n:88},{t:'소방차 출동',n:102},{t:'공룡 탐험',n:215}];
+const SHELF_EASY=[{t:'내 친구 로봇',n:88},{t:'소방차 출동',n:102}];
+function shelfBooks(){ return S.level==='easy'?SHELF_EASY:(S.level==='mid'?SHELF_MID:SHELF_REAL); }
+
+const PAY_PER_TASK=1500;
+
+/* ================= 상태 ================= */
+const S={level:'real',big:0,speak:1,scan:0,done:0};
+let view='start', hist=[], bi=0, placed=[], shuffled=[];
+
+const {say,choice,head}=makeUI(S);
+const scan=makeScan(S,'stage');
+
+/* ================= 그림 ================= */
+const I={
+ book:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"><path d="M50 28c-8-8-20-10-32-9v52c12-1 24 1 32 9 8-8 20-10 32-9V19c-12-1-24 1-32 9z"/><path d="M50 28v52"/></svg>',
+ stamp:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"><rect x="26" y="20" width="48" height="30" rx="6"/><path d="M38 50v14M62 50v14"/><rect x="22" y="64" width="56" height="20" rx="5"/></svg>',
+ shelf:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"><rect x="12" y="14" width="76" height="72" rx="4"/><path d="M12 38h76M12 62h76"/></svg>',
+ ask:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M50 65a26 26 0 1 1 18-7l6 14-16-5a26 26 0 0 1-8 1z"/><path d="M50 40v8M50 54h.1"/></svg>',
+ play:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round"><circle cx="50" cy="50" r="34"/><path d="M42 36l24 14-24 14z" fill="currentColor"/></svg>',
+ none:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"><circle cx="50" cy="50" r="32"/><path d="M28 72L72 28"/></svg>',
+ coin:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"><circle cx="50" cy="50" r="38"/><path d="M50 30v40M40 38h14a7 7 0 0 1 0 14H40h16a7 7 0 0 1 0 14H38"/></svg>'
+};
+
+/* ================= 이동 ================= */
+function goto(v,push){ if(push!==false) hist.push(view); view=v; render(); }
+function back(){ if(hist.length){ view=hist.pop(); render(); } }
+function reset(){ view='start'; hist=[]; bi=0; placed=[]; shuffled=[]; render(); }
+
+function render(){
+  scan.stopScan();
+  document.documentElement.style.setProperty('--sc',S.big?'1.22':'1');
+  const st=document.getElementById('stage'); st.innerHTML='';
+  document.getElementById('backBtn').disabled=!hist.length;
+  document.getElementById('homeBtn').disabled=(view==='start');
+  ({start:scrStart,borrow:scrBorrow,shelf:scrShelf,ask:scrAsk,done:scrDone})[view](st);
+  scan.startScan();
+}
+
+/* ---- 0. 출근 ---- */
+function scrStart(st){
+  sWelcome();
+  const w=el('div','sheetwrap'); st.appendChild(w);
+  head('꿈결 도서관에 오신 걸 환영해요','오늘은 사서 선생님을 도와드려요',w);
+  const g=el('div','grid one'); w.appendChild(g);
+  g.appendChild(choice({label:'출근하기',pic:I.play,cls:'go',sound:sConfirm,
+    act:()=>{ bi=0; goto('borrow'); }}));
+}
+
+/* ---- 1. 대출 처리 ---- */
+function scrBorrow(st){
+  const name=borrowers()[bi];
+  const w=el('div','sheetwrap'); st.appendChild(w);
+  head(name+' 손님이 책을 빌리러 왔어요','책 뒤의 바코드를 찍어 주세요',w);
+  const g=el('div','grid one'); w.appendChild(g);
+  g.appendChild(choice({label:'바코드 찍기',pic:I.stamp,cls:'go',sound:sScan,
+    act:()=>{
+      toast('📖 대출됐어요! 2주 뒤에 반납해요');
+      bi++;
+      if(bi<borrowers().length) render();
+      else { shuffled=shuffleArr(shelfBooks()); placed=[]; goto('shelf'); }
+    }}));
+}
+function shuffleArr(arr){
+  const a=arr.slice();
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+
+/* ---- 2. 책 정리 (청구번호 순서) ---- */
+function scrShelf(st){
+  const w=el('div','sheetwrap'); st.appendChild(w);
+  head('반납된 책을 번호 순서대로 꽂아요','작은 번호부터 차례로 눌러 보세요',w);
+  const grid=el('div','shelf'); w.appendChild(grid);
+  const sortedNums=shelfBooks().map(b=>b.n).sort((a,b)=>a-b);
+  shuffled.forEach(b=>{
+    const isPlaced=placed.includes(b.n);
+    const card=el('button','book'+(isPlaced?' placed':''));
+    card.type='button'; if(!isPlaced) card.dataset.scan='1';
+    card.innerHTML='<span class="cn">'+b.n+'</span><span>'+b.t+'</span>';
+    if(!isPlaced) card.addEventListener('click',()=>{
+      const next=sortedNums[placed.length];
+      if(b.n===next){ sConfirm(); say(b.t); placed.push(b.n);
+        if(placed.length===sortedNums.length){
+          toast('📚 책장 정리를 다 했어요!');
+          setTimeout(()=>goto('ask'),700);
+        } else render();
+      } else { sError(); toast('더 작은 번호부터 꽂아야 해요'); }
+    });
+    grid.appendChild(card);
+  });
+}
+
+/* ---- 3. 안내하기 ---- */
+function scrAsk(st){
+  const w=el('div','sheetwrap'); st.appendChild(w);
+  head('손님이 물어봐요: "공룡 책은 어디 있어요?"',null,w);
+  const p=el('div','panel');
+  p.innerHTML='<span class="pic" style="width:50px;height:50px;display:inline-block;color:var(--brand)">'+I.ask+'</span>';
+  w.appendChild(p);
+  const g=el('div','grid'); w.appendChild(g);
+  g.appendChild(choice({label:'책장으로 안내해 드려요',pic:I.shelf,cls:'go',
+    act:()=>{ sConfirm(); toast('친절하게 안내했어요!'); goto('done'); }}));
+  g.appendChild(choice({label:'모르겠다고 하고 가요',pic:I.none,
+    act:()=>{ sError(); toast('손님이 곤란해해요. 다시 생각해 볼까요?'); }}));
+}
+
+/* ---- 4. 퇴근 ---- */
+function scrDone(st){
+  sCheer();
+  const w=el('div','sheetwrap'); st.appendChild(w);
+  const tasks=borrowers().length+1+1;
+  const pay=tasks*PAY_PER_TASK;
+  const p=el('div','panel');
+  p.innerHTML='<p class="big">오늘 사서보조 알바가 끝났어요!</p>'+
+    '<span class="pic" style="width:50px;height:50px;display:inline-block;color:var(--accent)">'+I.coin+'</span>'+
+    '<div class="pay">오늘 번 돈 '+pay.toLocaleString('ko-KR')+'원</div>'+
+    '<p>대출 도와주기 · 책 정리하기 · 안내하기, 모두 해냈어요</p>';
+  w.appendChild(p);
+  say('오늘 알바가 끝났어요. 수고하셨어요!');
+  const g=el('div','grid'); w.appendChild(g);
+  g.appendChild(choice({label:'다시 출근하기',pic:I.play,cls:'go',
+    act:()=>{ S.done++; reset(); }}));
+  g.appendChild(choice({label:'목록으로',pic:I.none,
+    act:()=>{ location.href='index.html'; }}));
+}
+
+wireSettingsSheet(S, reset, { scan, tallyLabel:'이번 시간에 끝낸 근무' });
+wireNav(S, back, reset, scan);
+render();
+</script>
+</body>
+</html>

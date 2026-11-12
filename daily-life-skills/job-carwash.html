@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1878A3">
+<title>반짝반짝 세차장 직원 체험</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="job-common.css">
+<style>
+:root{
+  --bg:#E9F4F6; --surface:#FFFFFF; --surface-2:#F2FAFB; --surface-3:#DEF0F2;
+  --fg:#17262B; --muted:#56696E; --line:#C9E3E7;
+  --brand:#1878A3; --brand-soft:#D7ECF3; --accent:#2FBF9A; --accent-ink:#06211B;
+  --warn:#B4541F;
+  --font-d:"Gothic A1","Noto Sans KR",system-ui,sans-serif;
+  --font-b:"Noto Sans KR","Gothic A1",system-ui,sans-serif;
+  --sc:1;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E1618; --surface:#172123; --surface-2:#1E2A2C; --surface-3:#273638;
+  --fg:#E6F1F3; --muted:#9BB1B6; --line:#304548;
+  --brand:#6FC4E8; --brand-soft:#1C3A42; --accent:#4FE0B8; --accent-ink:#06211B;
+  --warn:#FF9A6B; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0E1618; --surface:#172123; --surface-2:#1E2A2C; --surface-3:#273638;
+  --fg:#E6F1F3; --muted:#9BB1B6; --line:#304548;
+  --brand:#6FC4E8; --brand-soft:#1C3A42; --accent:#4FE0B8; --accent-ink:#06211B;
+  --warn:#FF9A6B; color-scheme:dark;
+}
+.steps{display:grid;gap:10px;grid-template-columns:repeat(2,1fr)}
+@media (min-width:560px){.steps{grid-template-columns:repeat(3,1fr)}}
+.step{background:var(--surface);border:3px solid var(--line);border-radius:14px;
+  padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;
+  font-family:var(--font-d);font-weight:700;font-size:calc(14.5px*var(--sc));text-align:center;
+  transition:transform .07s,opacity .2s}
+.step:active{transform:scale(.96)}
+.step .no{width:28px;height:28px;border-radius:50%;background:var(--brand-soft);color:var(--brand);
+  display:grid;place-items:center;font-size:calc(13px*var(--sc));font-weight:900}
+.step.placed{opacity:.35;pointer-events:none;border-color:var(--brand)}
+</style>
+</head>
+<body>
+<div class="kiosk">
+  <div class="bar">
+    <a class="ghost" href="index.html" aria-label="일상생활기술 연습 목록으로 돌아가기" title="목록으로">🏠 목록으로</a>
+    <div class="brand">반짝반짝 세차장</div>
+    <div class="sp"></div>
+    <button class="ghost" id="backBtn">← 뒤로</button>
+    <button class="ghost" id="homeBtn">처음부터</button>
+    <button class="gear" id="gear" aria-label="선생님 설정 — 1초 길게 누르세요">
+      <span class="fill" id="gfill"></span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>
+    </button>
+  </div>
+  <div class="stage" id="stage"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="box">
+    <h2>선생님 설정</h2>
+    <p class="lead">학생에 따라 단계를 줄이세요. 바꾸면 처음부터 다시 시작합니다.</p>
+    <div class="opt"><span class="t">난이도
+      <small>실제처럼 = 세차 코스 선택 · 5단계 순서대로 세차 · 결제까지</small></span>
+      <div class="seg" data-set="level">
+        <button data-v="real">실제처럼</button><button data-v="mid">조금 쉽게</button><button data-v="easy">아주 쉽게</button>
+      </div>
+    </div>
+    <div class="opt"><span class="t">글자·버튼 크기</span>
+      <div class="seg" data-set="big">
+        <button data-v="0">보통</button><button data-v="1">크게</button>
+      </div>
+    </div>
+    <div class="opt"><span class="t">소리로 읽어 주기 <small>질문과 안내를 말해 줍니다</small></span>
+      <div class="seg" data-set="speak">
+        <button data-v="1">켜기</button><button data-v="0">끄기</button>
+      </div>
+    </div>
+    <div class="opt"><span class="t">스캔 모드
+      <small>칸이 하나씩 켜집니다. 스위치·스페이스바로 선택. '아주 쉽게'와 함께 쓰세요</small></span>
+      <div class="seg" data-set="scan">
+        <button data-v="0">끄기</button><button data-v="3">3초</button><button data-v="5">5초</button><button data-v="8">8초</button>
+      </div>
+    </div>
+    <div class="tally" id="tally"></div>
+    <button class="btn go" id="closeSet">닫기</button>
+  </div>
+</div>
+
+<script src="job-common.js"></script>
+<script>
+/* ================= 데이터 ================= */
+const COURSES=[{name:'기본세차',price:5000},{name:'왁스세차',price:8000},{name:'광택세차',price:12000}];
+const STEPS_REAL=[{t:'물 뿌리기',o:0},{t:'거품 칠하기',o:1},{t:'솔로 문지르기',o:2},{t:'물로 헹구기',o:3},{t:'수건으로 닦기',o:4}];
+const STEPS_MID =[{t:'물 뿌리기',o:0},{t:'거품 칠하기',o:1},{t:'물로 헹구기',o:2},{t:'수건으로 닦기',o:3}];
+const STEPS_EASY=[{t:'물 뿌리기',o:0},{t:'솔로 문지르기',o:1},{t:'물로 헹구기',o:2}];
+function steps(){ return S.level==='easy'?STEPS_EASY:(S.level==='mid'?STEPS_MID:STEPS_REAL); }
+function shuffleArr(arr){
+  const a=arr.slice();
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+
+/* ================= 상태 ================= */
+const S={level:'real',big:0,speak:1,scan:0,done:0};
+let view='start', hist=[], course=null, placed=[], shuffledSteps=[], payWay='';
+
+const {say,choice,head}=makeUI(S);
+const scan=makeScan(S,'stage');
+
+/* ================= 그림 ================= */
+const I={
+ car:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"><path d="M12 62l8-22a10 10 0 0 1 9-7h42a10 10 0 0 1 9 7l8 22"/><rect x="8" y="62" width="84" height="16" rx="6"/><circle cx="28" cy="78" r="8"/><circle cx="72" cy="78" r="8"/></svg>',
+ drop:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"><path d="M50 14c14 20 24 34 24 48a24 24 0 1 1-48 0c0-14 10-28 24-48z"/></svg>',
+ key:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"><circle cx="34" cy="50" r="18"/><path d="M50 50h40M78 50v14M90 50v10"/></svg>',
+ wave:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M30 60c0-28 10-42 10-42s4 6 4 16-4 12-4 12 8-2 8 8-6 10-6 10"/><circle cx="50" cy="30" r="10"/><path d="M30 90c6-14 14-20 24-20s20 6 24 18"/></svg>',
+ card:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"><rect x="12" y="26" width="76" height="48" rx="7"/><path d="M12 42h76M24 60h16"/></svg>',
+ cash:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"><rect x="10" y="28" width="80" height="44" rx="6"/><circle cx="50" cy="50" r="12"/><path d="M24 50h.1M76 50h.1"/></svg>',
+ play:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round"><circle cx="50" cy="50" r="34"/><path d="M42 36l24 14-24 14z" fill="currentColor"/></svg>',
+ none:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"><circle cx="50" cy="50" r="32"/><path d="M28 72L72 28"/></svg>',
+ coin:'<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"><circle cx="50" cy="50" r="38"/><path d="M50 30v40M40 38h14a7 7 0 0 1 0 14H40h16a7 7 0 0 1 0 14H38"/></svg>'
+};
+
+/* ================= 이동 ================= */
+function goto(v,push){ if(push!==false) hist.push(view); view=v; render(); }
+function back(){ if(hist.length){ view=hist.pop(); render(); } }
+function reset(){ view='start'; hist=[]; course=null; placed=[]; shuffledSteps=[]; payWay=''; render(); }
+
+function render(){
+  scan.stopScan();
+  document.documentElement.style.setProperty('--sc',S.big?'1.22':'1');
+  const st=document.getElementById('stage'); st.innerHTML='';
+  document.getElementById('backBtn').disabled=!hist.length;
+  document.getElementById('homeBtn').disabled=(view==='start');
+  ({start:scrStart,guide:scrGuide,course:scrCourse,wash:scrWash,handoff:scrHandoff,
+    pay:scrPay,card:scrCard,done:scrDone})[view](st);
+  scan.startScan();
+}
+
+/* ---- 0. 출근 ---- */
+function scrStart(st){
+  sWelcome();
+  const w=el('div','sheetwrap'); st.appendChild(w);
+  head('반짝반짝 세차장에 오신 걸 환영해요','차례대로 차를 깨끗하게 세차해요',w);
+  const g=el('div','grid one'); w.appendChild(g);
+  g.appendChild(choice({label:'출근하기',pic:I.play,cls:'go',sound:sConfirm,
+    act:()=>goto('guide')}));
+}
+
+/* ---- 1. 차량 안내 ---- */
+function scrGuide(st){
+  const w=el('div','sheetwrap'); st.appendChild(w);
+  head('손님 차가 들어왔어요','세차 라인 위로 안내해요',w);
+  const p=el('div','panel');
+  p.innerHTML='<span class="pic" style="width:60px;height:60px;display:inline-block;color:var(--brand)">'+I.car+'</span>';
+  w.appendChild(p);
+  const g=el('div','grid one'); w.appendChild(g);
+  g.appendChild(choice({label:'세차 라인으로 안내하기',pic:I.car,cls:'go',sound:sConfirm,
+    act:()=>goto('course')}));
+}
+
+/* ---- 2. 코스 선택 ---- */
+function scrCourse(st){
+  const w=el('div','sheetwrap'); st.appendChild(w);
+  head('어떤 세차 코스로 할까요?',null,w);
+  const g=el('div','grid'); w.appendChild(g);
+  COURSES.forEach(c=>{
+    g.appendChild(choice({label:c.name,sub:c.price.toLocaleString('ko-KR')+'원',
+      act:()=>{ course=c; placed=[]; shuffledSteps=shuffleArr(steps()); goto('wash'); }}));
+  });
+}
+
+/* ---- 3. 세차 순서대로 하기 ---- */
+function scrWash(st){
+  const w=el('div','sheetwrap'); st.appendChild(w);
+  head('순서대로 세차해요','처음 하는 일부터 차례로 눌러 보세요',w);
+  w.appendChild(el('div','hint','완료 '+placed.length+' / '+steps().length));
+  const grid=el('div','steps'); w.appendChild(grid);
+  const order=steps().map(s=>s.o).sort((a,b)=>a-b);
+  shuffledSteps.forEach(s=>{
+    const isPlaced=placed.includes(s.o);
+    const card=el('button','step'+(isPlaced?' placed':''));
+    card.type='button'; if(!isPlaced) card.dataset.scan='1';
+    card.innerHTML='<span class="no">'+(s.o+1)+'</span><span>'+s.t+'</span>';
+    if(!isPlaced) card.addEventListener('click',()=>{
+      const next=order[placed.length];
+      if(s.o===next){ sConfirm(); say(s.t); placed.push(s.o);
+        if(placed.length===order.length){
+          toast('🚗 세차를 다 마쳤어요!');
+          setTimeout(()=>goto('handoff'),700);
+        } else render();
+      } else { sError(); toast('순서를 다시 생각해 볼까요?'); }
+    });
+    grid.appendChild(card);
+  });
+}
+
+/* ---- 4. 열쇠 전달 ---- */
+function scrHandoff(st){
+  const w=el('div','sheetwrap'); st.appendChild(w);
+  head('세차가 끝났어요','열쇠를 돌려드려요',w);
+  const p=el('div','panel');
+  p.innerHTML='<span class="pic" style="width:50px;height:50px;display:inline-block;color:var(--brand)">'+I.key+'</span>';
+  w.appendChild(p);
+  const g=el('div','grid one'); w.appendChild(g);
+  g.appendChild(choice({label:'열쇠 드리고 인사하기',pic:I.wave,cls:'go',sound:sConfirm,
+    act:()=>goto('pay')}));
+}
+
+/* ---- 5. 결제 ---- */
+function scrPay(st){
+  const w=el('div','sheetwrap'); st.appendChild(w);
+  head('결제수단을 골라 주세요','낼 돈 '+course.price.toLocaleString('ko-KR')+'원',w);
+  const g=el('div','grid'); w.appendChild(g);
+  g.appendChild(choice({label:'신용·체크카드',pic:I.card,pressed:payWay==='카드',act:()=>{payWay='카드';render();}}));
+  g.appendChild(choice({label:'현금',pic:I.cash,pressed:payWay==='현금',act:()=>{payWay='현금';render();}}));
+  const g2=el('div','grid one'); w.appendChild(g2);
+  const nx=choice({label:payWay?'다음 · '+payWay+'로 결제':'결제수단을 먼저 골라 주세요',
+    cls:payWay?'go':'', act:()=>{ if(payWay) goto('card'); }});
+  if(!payWay) nx.style.opacity='.5';
+  g2.appendChild(nx);
+}
+function scrCard(st){
+  const w=el('div','sheetwrap'); st.appendChild(w);
+  head(payWay==='카드'?'카드를 넣어 주세요':'현금을 받았어요','낼 돈 '+course.price.toLocaleString('ko-KR')+'원',w);
+  const p=el('div','panel');
+  p.innerHTML='<div class="slot" id="slot"><span>'+(payWay==='카드'?'여기에 카드를 넣어요':'결제를 확인해요')+'</span><div class="card"></div></div>';
+  w.appendChild(p);
+  const g=el('div','grid one'); w.appendChild(g);
+  g.appendChild(choice({label:payWay==='카드'?'카드 넣기':'결제하기',pic:I.card,cls:'go',sound:sCardIn,
+    act:()=>{
+      const sl=document.getElementById('slot'); if(sl) sl.classList.add('in');
+      p.innerHTML='<div class="spin"></div><p class="big">결제하는 중이에요</p>';
+      g.innerHTML='';
+      say('결제하는 중이에요');
+      setTimeout(()=>{ sCheer(); goto('done'); },1600);
+    }}));
+}
+
+/* ---- 6. 퇴근 ---- */
+function scrDone(st){
+  const w=el('div','sheetwrap'); st.appendChild(w);
+  const p=el('div','panel');
+  p.innerHTML='<p class="big">오늘 세차장 알바가 끝났어요!</p>'+
+    '<span class="pic" style="width:50px;height:50px;display:inline-block;color:var(--accent)">'+I.coin+'</span>'+
+    '<div class="pay">오늘 번 돈 '+course.price.toLocaleString('ko-KR')+'원</div>'+
+    '<p>'+course.name+'를 순서대로 깨끗하게 해냈어요</p>';
+  w.appendChild(p);
+  say('오늘 알바가 끝났어요. 수고하셨어요!');
+  const g=el('div','grid'); w.appendChild(g);
+  g.appendChild(choice({label:'다시 출근하기',pic:I.play,cls:'go',
+    act:()=>{ S.done++; reset(); }}));
+  g.appendChild(choice({label:'목록으로',pic:I.none,
+    act:()=>{ location.href='index.html'; }}));
+}
+
+wireSettingsSheet(S, reset, { scan, tallyLabel:'이번 시간에 끝낸 근무' });
+wireNav(S, back, reset, scan);
+render();
+</script>
+</body>
+</html>
