@@ -301,7 +301,16 @@ function sError()  { tone({freq:300,duration:.18,type:'square',gain:.09,sweepTo:
 function sCardIn() { tone({freq:240,duration:.24,type:'sawtooth',gain:.06,sweepTo:110}); }
 function sConfirm(){ tone({freq:660,duration:.1,type:'sine',gain:.13}); tone({freq:990,duration:.16,type:'sine',gain:.11,delay:.08}); }
 function sHelp()   { tone({freq:880,duration:.16,type:'sine',gain:.16}); tone({freq:660,duration:.22,type:'sine',gain:.14,delay:.18}); }
-function sCheer()  { [523.25,659.25,783.99,1046.5].forEach((f,i)=>tone({freq:f,duration:.28,type:'triangle',gain:.18,delay:i*.12})); }
+function note(freq,delay,duration,gain,type){ tone({freq,delay,duration,gain:gain||.16,type:type||'triangle'}); }
+function sWelcome(){
+  [[659.25,0,.09],[783.99,.09,.09],[987.77,.18,.09],[1318.51,.3,.24]]
+    .forEach(([f,d,du])=>note(f,d,du,.14));
+}
+function sCheer(){
+  [[392,0,.11],[523.25,.1,.11],[659.25,.2,.11],[783.99,.3,.16],
+   [880,.5,.09],[783.99,.59,.09],[1046.5,.68,.36]]
+    .forEach(([f,d,du])=>note(f,d,du,.19));
+}
 function say(t){ if(!S.speak||!t) return;
   try{ const u=new SpeechSynthesisUtterance(t); u.lang='ko-KR'; u.rate=.95;
     speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){} }
@@ -349,6 +358,7 @@ function render(){
 }
 
 function scrStart(st){
+  sWelcome();
   const w=el('div','sheetwrap'); st.appendChild(w);
   head('셀프 계산대에 오신 걸 환영해요','장바구니에 담은 물건을 혼자서 계산해요',w);
   const g=el('div','grid one'); w.appendChild(g);
