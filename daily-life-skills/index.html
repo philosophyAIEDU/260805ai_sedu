@@ -304,7 +304,7 @@
         <div class="big" id="doneEmoji" aria-hidden="true">🎉</div>
         <h2 id="doneTitle">미션 성공!</h2>
         <p id="doneText">잘 했어요!</p>
-        <div class="done-actions">
+        <div class="done-actions" id="doneActions">
           <button class="btn btn-ghost" id="btnAgain">🔁 한 번 더 하기</button>
           <button class="btn btn-primary" id="btnToHome">🏠 다른 미션 하기</button>
         </div>
@@ -627,6 +627,7 @@
     {
       id: 'cafe', emoji: '☕', title: '카페 이용하기', chapter: '6. 카페',
       desc: '음료를 주문하고 받아요',
+      link: { url: 'cafe-kiosk.html', label: '🏪 실제 카페 키오스크로 연습하기' },
       steps: [
         { type: 'sequence', text: '카페에서 음료를 마시는 순서예요. 순서대로 눌러 보세요.',
           items: ['메뉴판을 보고 음료를 골라요', '카운터에서 주문해요', '돈이나 카드로 계산해요', '진동벨이 울리면 음료를 받아요'],
@@ -1085,6 +1086,17 @@
     document.getElementById('doneText').textContent = perfect
       ? '한 번도 틀리지 않았어요. 정말 잘했어요!'
       : '끝까지 해냈어요. 참 잘했어요!';
+
+    var doneActions = document.getElementById('doneActions');
+    var oldExtra = document.getElementById('doneExtra');
+    if (oldExtra) oldExtra.remove();
+    if (m.link) {
+      var extra = el('a', { class: 'btn btn-ghost', id: 'doneExtra',
+                             href: m.link.url, target: '_blank', rel: 'noopener',
+                             text: m.link.label });
+      doneActions.insertBefore(extra, doneActions.firstChild);
+    }
+
     show('done');
     burstConfetti(); sCheer();
     speak(m.title + ' 미션 성공! 참 잘했어요.');
