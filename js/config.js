@@ -60,7 +60,13 @@ const CFG = {
     { emoji: '🏙️', label: '일상생활기술 연습', desc: '지하철·버스·카페·병원을 게임으로 연습해요',
       url: 'daily-life-skills/index.html' },
     { emoji: '☕', label: '카페 키오스크 연습', desc: '실제 키오스크처럼 메뉴를 고르고 주문해 봐요',
-      url: 'daily-life-skills/cafe-kiosk.html' }
+      url: 'daily-life-skills/cafe-kiosk.html' },
+    { emoji: '🏧', label: 'ATM 인출 연습', desc: '카드 넣고 비밀번호 눌러 돈을 찾아 봐요',
+      url: 'daily-life-skills/atm.html' },
+    { emoji: '🍔', label: '패스트푸드 키오스크 연습', desc: '세트메뉴를 고르고 번호표를 받아 봐요',
+      url: 'daily-life-skills/fastfood-kiosk.html' },
+    { emoji: '🛒', label: '셀프 계산대 연습', desc: '물건을 직접 찍고 혼자 계산해 봐요',
+      url: 'daily-life-skills/self-checkout.html' }
   ],
 
   /* ---------- 주제 ---------- */
